@@ -218,8 +218,8 @@ export function ExpenseAssignment({
                               : "bg-gray-200 text-gray-400 hover:bg-gray-300"
                           )}
                         >
-                          <span className="relative z-10 text-sm">
-                            {p.display_name.charAt(0).toUpperCase()}
+                          <span className="relative z-10 text-sm truncate max-w-[80px]">
+                            {p.display_name}
                           </span>
                           <Icon className="w-4 h-4 relative z-10 opacity-90" />
                           {isAssigned && (
