@@ -61,11 +61,13 @@ export function ReceiptUploader({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ receiptId: receiptData.id }),
       });
-      
+
       const result = await response.json();
       if (!response.ok) {
         console.error("API Processing Error Details:", result);
-        throw new Error(result.details || result.error || "Failed while parsing receipt");
+        throw new Error(
+          result.details || result.error || "Failed while parsing receipt",
+        );
       }
 
       console.log("Success! Server answered:", result);
@@ -73,7 +75,9 @@ export function ReceiptUploader({
       if (onUploadSuccess) onUploadSuccess();
     } catch (error) {
       console.error("Upload failed", error);
-      alert(`Failed: ${error instanceof Error ? error.message : String(error)}`);
+      alert(
+        `Failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       if (!receipt || !receipt.image_url) {
         throw new Error("Receipt or image URL not found");
       }
-      
+
       const baseCurrency = receipt.sessions?.base_currency || "HKD";
 
       // Initialize OpenRouter Client
@@ -82,7 +82,10 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
       console.log("AI response received:");
       console.log(content);
 
-      let parsedData: { currency?: string; items: { item_name: string; price: number; [key: string]: unknown }[] } = { currency: baseCurrency, items: [] };
+      let parsedData: {
+        currency?: string;
+        items: { item_name: string; price: number; [key: string]: unknown }[];
+      } = { currency: baseCurrency, items: [] };
       try {
         // Safely strip any potential markdown wrappers
         const cleanedContent = content
@@ -94,7 +97,10 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
         if (Array.isArray(parsed)) {
           parsedData = { currency: baseCurrency, items: parsed };
         } else {
-          parsedData = { currency: parsed.currency || baseCurrency, items: parsed.items || [] };
+          parsedData = {
+            currency: parsed.currency || baseCurrency,
+            items: parsed.items || [],
+          };
         }
       } catch (e) {
         console.error("Failed to parse JSON from AI", e, "\nContent:", content);
@@ -106,16 +112,25 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
       const finalCurrency = parsedData.currency || baseCurrency;
       if (finalCurrency !== baseCurrency) {
         try {
-          console.log(`Fetching exchange rate for ${finalCurrency} to ${baseCurrency}...`);
+          console.log(
+            `Fetching exchange rate for ${finalCurrency} to ${baseCurrency}...`,
+          );
           // Using a free open exchange rate API
-          const rateRes = await fetch(`https://open.er-api.com/v6/latest/${finalCurrency}`);
+          const rateRes = await fetch(
+            `https://open.er-api.com/v6/latest/${finalCurrency}`,
+          );
           const rateData = await rateRes.json();
           if (rateData && rateData.rates && rateData.rates[baseCurrency]) {
-             exchangeRate = rateData.rates[baseCurrency];
-             console.log(`Exchange rate found: 1 ${finalCurrency} = ${exchangeRate} ${baseCurrency}`);
+            exchangeRate = rateData.rates[baseCurrency];
+            console.log(
+              `Exchange rate found: 1 ${finalCurrency} = ${exchangeRate} ${baseCurrency}`,
+            );
           }
         } catch (rateErr) {
-          console.error("Failed to fetch exchange rate, falling back to 1.0", rateErr);
+          console.error(
+            "Failed to fetch exchange rate, falling back to 1.0",
+            rateErr,
+          );
         }
       }
 
@@ -188,11 +203,11 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
       // Update receipt status with the detected currency and exchange rate
       await supabase
         .from("receipts")
-        .update({ 
-          processing_status: "completed", 
+        .update({
+          processing_status: "completed",
           currency: finalCurrency,
           exchange_rate_to_base: exchangeRate,
-          parsed_data: finalItems 
+          parsed_data: finalItems,
         })
         .eq("id", receiptId);
 
@@ -209,7 +224,7 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
       console.error("Background processing failed:", err);
       // Let's send the detailed error back so we can see what actually failed
       const errorMessage = err instanceof Error ? err.message : String(err);
-      
+
       await supabase
         .from("receipts")
         .update({ processing_status: "failed" })

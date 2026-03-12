@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Receipt, ArrowRight, Sparkles, Users, ChevronDown } from "lucide-react";
+import {
+  Receipt,
+  ArrowRight,
+  Sparkles,
+  Users,
+  ChevronDown,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function Home() {
@@ -132,7 +138,7 @@ export default function Home() {
                 <ChevronDown className="h-5 w-5 text-gray-400" />
               </div>
             </div>
-            
+
             <button
               onClick={handleCreateSession}
               disabled={isCreating || isJoining}
