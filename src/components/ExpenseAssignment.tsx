@@ -1,0 +1,198 @@
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { User, Image as ImageIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// Types
+export interface Participant {
+  id: string;
+  display_name: string;
+  avatar_icon: string;
+  avatar_color: string;
+}
+
+interface Item {
+  id: string;
+  receipt_id: string;
+  item_name: string;
+  item_image_url: string;
+  price: number;
+  assigned_to: string[] | null;
+}
+
+interface Receipt {
+  id: string;
+  image_url: string;
+  processing_status: string;
+  currency: string;
+  items: Item[];
+}
+
+const COLORS: Record<string, string> = {
+  red: "bg-red-500",
+  orange: "bg-orange-500",
+  green: "bg-emerald-500",
+  blue: "bg-blue-500",
+  purple: "bg-purple-500",
+  pink: "bg-pink-500",
+};
+
+export function ExpenseAssignment({
+  sessionId,
+  participants,
+  myParticipantId,
+}: {
+  sessionId: string;
+  participants: Participant[];
+  myParticipantId: string;
+}) {
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchReceipts();
+
+    // Subscribe to receipts and items changes
+    const rChannel = supabase
+      .channel('receipts_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'receipts', filter: `session_id=eq.${sessionId}` }, fetchReceipts)
+      .subscribe();
+      
+    const iChannel = supabase
+      .channel('items_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, fetchReceipts)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(rChannel);
+      supabase.removeChannel(iChannel);
+    };
+  }, [sessionId, supabase]);
+
+  const fetchReceipts = async () => {
+    const { data } = await supabase
+      .from("receipts")
+      .select("id, image_url, processing_status, currency, items(id, receipt_id, item_name, item_image_url, price, assigned_to)")
+      .eq("session_id", sessionId)
+      .order("uploaded_at", { ascending: false });
+
+    if (data) {
+      setReceipts(data as Receipt[]);
+    }
+  };
+
+  const toggleAssignment = async (itemId: string, currentAssignedTo: string[] | null, participantId: string) => {
+    let newAssignedTo = currentAssignedTo ? [...currentAssignedTo] : [];
+    
+    if (newAssignedTo.includes(participantId)) {
+      newAssignedTo = newAssignedTo.filter(id => id !== participantId);
+    } else {
+      newAssignedTo.push(participantId);
+    }
+
+    // Optimistic update locally
+    setReceipts(receipts.map(r => ({
+      ...r,
+      items: r.items.map(i => i.id === itemId ? { ...i, assigned_to: newAssignedTo } : i)
+    })));
+
+    // Send to DB
+    await supabase.from("items").update({ assigned_to: newAssignedTo }).eq("id", itemId);
+  };
+
+  if (receipts.length === 0) return null;
+
+  return (
+    <div className="space-y-6 mb-32">
+      {receipts.map(receipt => (
+        <div key={receipt.id} className="bg-white border border-gray-100 rounded-3xl p-4 shadow-sm space-y-4">
+          
+          <div className="flex items-center justify-between border-b border-gray-50 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
+                {receipt.image_url ? (
+                  <img src={receipt.image_url} alt="Receipt Thumbnail" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm">Receipt</h3>
+                <p className="text-xs text-gray-500">
+                  {receipt.processing_status === 'processing' ? 'AI is reading...' : 
+                   receipt.processing_status === 'failed' ? 'Failed to read' : 
+                   `${receipt.items?.length || 0} items`}
+                </p>
+              </div>
+            </div>
+            {receipt.processing_status === 'processing' && (
+              <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {receipt.items?.map(item => (
+              <div key={item.id} className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3 shadow-sm border-b-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    {item.item_image_url ? (
+                      <img src={item.item_image_url} alt={item.item_name} className="w-12 h-12 rounded-xl object-cover border border-gray-200" />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center border border-gray-200">
+                        <ImageIcon className="w-5 h-5 text-gray-400" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-bold text-gray-900 text-sm capitalize leading-tight">{item.item_name}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-indigo-700 text-lg">${item.price}</p>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-inner">
+                  <p className="text-[10px] font-bold tracking-wider uppercase text-gray-400 text-center mb-3">Tap to Split Expense</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {participants.map(p => {
+                      const isAssigned = item.assigned_to?.includes(p.id);
+                      const baseColor = COLORS[p.avatar_color] || 'bg-gray-800';
+                      
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => toggleAssignment(item.id, item.assigned_to, p.id)}
+                          className={cn(
+                            "group relative w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold transition-all active:scale-90",
+                            isAssigned 
+                              ? `${baseColor} shadow-md ring-2 ring-offset-1` 
+                              : "bg-gray-200 text-gray-400 hover:bg-gray-300"
+                          )}
+                        >
+                          <span className="relative z-10 text-lg">
+                            {p.display_name.charAt(0).toUpperCase()}
+                          </span>
+                          {isAssigned && (
+                            <div className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

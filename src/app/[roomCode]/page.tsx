@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { ReceiptUploader } from "@/components/ReceiptUploader";
+import { ExpenseAssignment } from "@/components/ExpenseAssignment";
 
 // --- Config Data ---
 const AVATARS = {
@@ -409,9 +410,18 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
         </div>
       </div>
 
+      {/* Interactive Expense Assignment */}
+      {sessionId && myParticipant && (
+        <ExpenseAssignment
+          sessionId={sessionId}
+          participants={participants}
+          myParticipantId={myParticipant.id}
+        />
+      )}
+
       {/* Bottom Floating Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent">
-        <div className="max-w-md mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pointer-events-none">
+        <div className="max-w-md mx-auto pointer-events-auto">
           {sessionId && myParticipant && (
             <ReceiptUploader
               sessionId={sessionId}
