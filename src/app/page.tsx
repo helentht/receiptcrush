@@ -1,101 +1,174 @@
-import Image from "next/image";
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Receipt, ArrowRight, Sparkles, Users } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const router = useRouter()
+  const supabase = createClient()
+  
+  const [isCreating, setIsCreating] = useState(false)
+  const [joinCode, setJoinCode] = useState("")
+  const [isJoining, setIsJoining] = useState(false)
+  const [error, setError] = useState("")
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const generateRoomCode = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    let result = ""
+    // PRD FR-1.2: Room codes 4-6 characters. Let's do 5 characters for an optimal balance.
+    for (let i = 0; i < 5; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return result
+  }
+
+  const handleCreateSession = async () => {
+    setIsCreating(true)
+    setError("")
+    
+    let roomCode = generateRoomCode()
+    let isCodeUnique = false
+    let attempts = 0
+    let sessionData = null
+    
+    // Ensure uniqueness, fallback just in case
+    while (!isCodeUnique && attempts < 3) {
+      const { data, error } = await supabase
+        .from('sessions')
+        .insert([{ room_code: roomCode }])
+        .select()
+        .single()
+
+      if (!error) {
+        isCodeUnique = true
+        sessionData = data
+      } else if (error.code === '23505') { // Postgres unique constraint violation code
+        roomCode = generateRoomCode()
+        attempts++
+      } else {
+        console.error(error)
+        break // Other unknown error
+      }
+    }
+
+    if (!isCodeUnique) {
+      setError("Failed to create session. Please try again.")
+      setIsCreating(false)
+      return
+    }
+
+    // Redirect to the new room
+    router.push(`/${roomCode}`)
+  }
+
+  const handleJoinSession = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!joinCode.trim()) return
+
+    setIsJoining(true)
+    setError("")
+
+    const code = joinCode.toUpperCase().trim()
+
+    // Verify room exists
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('id')
+      .eq('room_code', code)
+      .single()
+
+    if (error || !data) {
+      setError("Room not found. Please check the code and try again.")
+      setIsJoining(false)
+      return
+    }
+
+    router.push(`/${code}`)
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
+        
+        {/* Header / Logo */}
+        <div className="text-center space-y-2">
+          <div className="bg-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-200">
+            <Receipt className="text-white w-8 h-8" />
+          </div>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">ReceiptCrush</h1>
+          <p className="text-gray-500 font-medium">Split travel expenses with friends in 3 easy steps.</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center border border-red-100 font-medium tracking-tight animate-fade-in">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-6 pt-4">
+          {/* Create Room Button */}
+          <button
+            onClick={handleCreateSession}
+            disabled={isCreating || isJoining}
+            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] focus:ring-4 focus:ring-indigo-200 disabled:opacity-70 disabled:active:scale-100"
+          >
+            {isCreating ? (
+              <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                Create New Split
+              </>
+            )}
+          </button>
+
+          <div className="relative flex items-center py-2">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">or</span>
+            <div className="flex-grow border-t border-gray-200"></div>
+          </div>
+
+          {/* Join Room Form */}
+          <form onSubmit={handleJoinSession} className="space-y-3">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Users className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Enter Room Code (e.g. AX7B9)"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                maxLength={6}
+                className="w-full pl-11 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-gray-900 font-bold tracking-widest placeholder:font-normal placeholder:tracking-normal focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:bg-white transition-all uppercase"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isJoining || isCreating || !joinCode.trim()}
+              className="w-full flex items-center justify-center gap-2 bg-white border-2 border-gray-200 text-gray-700 hover:border-indigo-600 hover:text-indigo-600 hover:bg-indigo-50 p-4 rounded-2xl font-bold transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 disabled:hover:border-gray-200 disabled:hover:bg-white disabled:hover:text-gray-700"
+            >
+              {isJoining ? (
+                <div className="w-5 h-5 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  Join Existing Split
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+      </div>
+      
+      {/* Footer Info */}
+      <div className="mt-8 text-center text-sm text-gray-500 space-y-1">
+        <p className="font-medium">No account required.</p>
+        <p className="text-gray-400">Sessions automatically securely delete after 30 days.</p>
+      </div>
+    </main>
+  )
 }
