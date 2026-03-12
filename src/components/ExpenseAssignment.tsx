@@ -218,7 +218,7 @@ export function ExpenseAssignment({
                               : "bg-gray-200 text-gray-400 hover:bg-gray-300"
                           )}
                         >
-                          <span className="relative z-10 text-sm truncate max-w-[80px]">
+                          <span className="relative z-10 text-sm truncate max-w-[150px]">
                             {p.display_name}
                           </span>
                           <Icon className="w-4 h-4 relative z-10 opacity-90" />
