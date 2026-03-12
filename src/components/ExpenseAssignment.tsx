@@ -29,6 +29,7 @@ interface Receipt {
   image_url: string;
   processing_status: string;
   currency: string;
+  uploader_id: string;
   items: Item[];
 }
 
@@ -76,7 +77,7 @@ export function ExpenseAssignment({
   const fetchReceipts = async () => {
     const { data } = await supabase
       .from("receipts")
-      .select("id, image_url, processing_status, currency, items(id, receipt_id, item_name, item_image_url, price, assigned_to)")
+      .select("id, image_url, processing_status, currency, uploader_id, items(id, receipt_id, item_name, item_image_url, price, assigned_to)")
       .eq("session_id", sessionId)
       .order("uploaded_at", { ascending: false });
 
@@ -141,7 +142,9 @@ export function ExpenseAssignment({
                 )}
               </div>
               <div>
-                <h3 className="font-bold text-gray-900 text-sm">Receipt</h3>
+                <h3 className="font-bold text-gray-900 text-sm">
+                  Paid by {participants.find(p => p.id === receipt.uploader_id)?.display_name || "Someone"}
+                </h3>
                 <p className="text-xs text-gray-500">
                   {receipt.processing_status === 'processing' ? 'AI is reading...' : 
                    receipt.processing_status === 'failed' ? 'Failed to read' : 
