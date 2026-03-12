@@ -85,11 +85,20 @@ export function ExpenseAssignment({
     }
   };
 
-  const deleteReceipt = async (receiptId: string) => {
+  const deleteReceipt = async (receiptId: string, imageUrl: string | null) => {
     if (!window.confirm("Are you sure you want to delete this receipt?")) return;
     
     // Optimistic update
     setReceipts(prev => prev.filter(r => r.id !== receiptId));
+
+    // Delete image from storage
+    if (imageUrl) {
+      // imageUrl looks like: .../storage/v1/object/public/receipts/[sessionId]/[filename]
+      const filePath = imageUrl.split('/receipts/').pop();
+      if (filePath) {
+        await supabase.storage.from("receipts").remove([filePath]);
+      }
+    }
 
     // Delete items first (in case cascade is not set), then receipt
     await supabase.from("items").delete().eq("receipt_id", receiptId);
@@ -145,7 +154,7 @@ export function ExpenseAssignment({
                 <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
               )}
               <button 
-                onClick={() => deleteReceipt(receipt.id)}
+                onClick={() => deleteReceipt(receipt.id, receipt.image_url)}
                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                 title="Delete receipt"
               >
