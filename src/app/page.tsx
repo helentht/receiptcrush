@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Receipt, ArrowRight, Sparkles, Users } from "lucide-react";
+import { Receipt, ArrowRight, Sparkles, Users, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function Home() {
@@ -12,6 +12,7 @@ export default function Home() {
   const [isCreating, setIsCreating] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+  const [baseCurrency, setBaseCurrency] = useState("HKD");
   const [error, setError] = useState("");
 
   const generateRoomCode = () => {
@@ -31,19 +32,17 @@ export default function Home() {
     let roomCode = generateRoomCode();
     let isCodeUnique = false;
     let attempts = 0;
-    let sessionData = null;
 
     // Ensure uniqueness, fallback just in case
     while (!isCodeUnique && attempts < 3) {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("sessions")
-        .insert([{ room_code: roomCode }])
+        .insert([{ room_code: roomCode, base_currency: baseCurrency }])
         .select()
         .single();
 
       if (!error) {
         isCodeUnique = true;
-        sessionData = data;
       } else if (error.code === "23505") {
         // Postgres unique constraint violation code
         roomCode = generateRoomCode();
@@ -112,21 +111,43 @@ export default function Home() {
         )}
 
         <div className="space-y-6 pt-4">
-          {/* Create Room Button */}
-          <button
-            onClick={handleCreateSession}
-            disabled={isCreating || isJoining}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] focus:ring-4 focus:ring-indigo-200 disabled:opacity-70 disabled:active:scale-100"
-          >
-            {isCreating ? (
-              <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Create New Split
-              </>
-            )}
-          </button>
+          {/* Create Room */}
+          <div className="space-y-3">
+            <div className="relative">
+              <select
+                value={baseCurrency}
+                onChange={(e) => setBaseCurrency(e.target.value)}
+                className="w-full pl-4 pr-10 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-gray-900 font-bold tracking-wide focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:bg-white transition-all appearance-none cursor-pointer"
+              >
+                <option value="HKD">🇭🇰 HKD - Hong Kong Dollar</option>
+                <option value="USD">🇺🇸 USD - US Dollar</option>
+                <option value="JPY">🇯🇵 JPY - Japanese Yen</option>
+                <option value="EUR">🇪🇺 EUR - Euro</option>
+                <option value="GBP">🇬🇧 GBP - British Pound</option>
+                <option value="AUD">🇦🇺 AUD - Australian Dollar</option>
+                <option value="CAD">🇨🇦 CAD - Canadian Dollar</option>
+                <option value="SGD">🇸🇬 SGD - Singapore Dollar</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                <ChevronDown className="h-5 w-5 text-gray-400" />
+              </div>
+            </div>
+            
+            <button
+              onClick={handleCreateSession}
+              disabled={isCreating || isJoining}
+              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] focus:ring-4 focus:ring-indigo-200 disabled:opacity-70 disabled:active:scale-100"
+            >
+              {isCreating ? (
+                <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Create New Split
+                </>
+              )}
+            </button>
+          </div>
 
           <div className="relative flex items-center py-2">
             <div className="flex-grow border-t border-gray-200"></div>

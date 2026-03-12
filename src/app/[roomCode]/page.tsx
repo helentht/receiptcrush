@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import {
   Copy,
   Check,
-  Camera,
   Smile,
   Cat,
   Dog,
@@ -19,6 +18,7 @@ import {
   Users,
   Loader2,
 } from "lucide-react";
+import { ReceiptUploader } from "@/components/ReceiptUploader";
 
 // --- Config Data ---
 const AVATARS = {
@@ -92,7 +92,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
 
   // Initial Load Pipeline
   useEffect(() => {
-    let channel: any;
+    let channel: ReturnType<typeof supabase.channel>;
 
     const init = async () => {
       // 1. Validate Session
@@ -248,8 +248,10 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
                 {(Object.keys(AVATARS) as AvatarKey[]).map((iconKey) => {
                   const IconComponent = AVATARS[iconKey];
                   const isSelected = selectedAvatar === iconKey;
-                  const selectedColorClass = COLORS.find(c => c.id === selectedColor)?.class || "bg-indigo-500";
-                  
+                  const selectedColorClass =
+                    COLORS.find((c) => c.id === selectedColor)?.class ||
+                    "bg-indigo-500";
+
                   return (
                     <button
                       key={iconKey}
@@ -258,7 +260,10 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
                       className={cn(
                         "aspect-square rounded-2xl flex items-center justify-center transition-all border-2",
                         isSelected
-                          ? cn("border-transparent text-white shadow-md", selectedColorClass)
+                          ? cn(
+                              "border-transparent text-white shadow-md",
+                              selectedColorClass,
+                            )
                           : "bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200 hover:text-gray-600",
                       )}
                     >
@@ -407,10 +412,16 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
       {/* Bottom Floating Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent">
         <div className="max-w-md mx-auto">
-          <button className="w-full flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white p-5 rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all active:scale-[0.98]">
-            <Camera className="w-6 h-6" />
-            Upload Receipts
-          </button>
+          {sessionId && myParticipant && (
+            <ReceiptUploader
+              sessionId={sessionId}
+              participantId={myParticipant.id}
+              onUploadSuccess={() => {
+                // We'll add feedback or reload navigation later
+                console.log("Upload triggered!");
+              }}
+            />
+          )}
         </div>
       </div>
     </main>
