@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { User, Image as ImageIcon, Trash2 } from "lucide-react";
+import { User, Image as ImageIcon, Trash2, Smile, Cat, Dog, Zap, Star, Heart, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -14,6 +14,18 @@ export interface Participant {
   avatar_icon: string;
   avatar_color: string;
 }
+
+const AVATARS = {
+  smile: Smile,
+  cat: Cat,
+  dog: Dog,
+  zap: Zap,
+  star: Star,
+  heart: Heart,
+  rocket: Rocket,
+  user: User,
+};
+type AvatarKey = keyof typeof AVATARS;
 
 interface Item {
   id: string;
@@ -193,21 +205,23 @@ export function ExpenseAssignment({
                     {participants.map(p => {
                       const isAssigned = item.assigned_to?.includes(p.id);
                       const baseColor = COLORS[p.avatar_color] || 'bg-gray-800';
+                      const Icon = AVATARS[p.avatar_icon as AvatarKey] || User;
                       
                       return (
                         <button
                           key={p.id}
                           onClick={() => toggleAssignment(item.id, item.assigned_to, p.id)}
                           className={cn(
-                            "group relative w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold transition-all active:scale-90",
+                            "group relative h-10 px-3 min-w-[3.5rem] rounded-xl flex items-center justify-center gap-1.5 text-white font-bold transition-all active:scale-90",
                             isAssigned 
                               ? `${baseColor} shadow-md ring-2 ring-offset-1` 
                               : "bg-gray-200 text-gray-400 hover:bg-gray-300"
                           )}
                         >
-                          <span className="relative z-10 text-lg">
+                          <span className="relative z-10 text-sm">
                             {p.display_name.charAt(0).toUpperCase()}
                           </span>
+                          <Icon className="w-4 h-4 relative z-10 opacity-90" />
                           {isAssigned && (
                             <div className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
