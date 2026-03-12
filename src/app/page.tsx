@@ -1,104 +1,108 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Receipt, ArrowRight, Sparkles, Users } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Receipt, ArrowRight, Sparkles, Users } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function Home() {
-  const router = useRouter()
-  const supabase = createClient()
-  
-  const [isCreating, setIsCreating] = useState(false)
-  const [joinCode, setJoinCode] = useState("")
-  const [isJoining, setIsJoining] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [isCreating, setIsCreating] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
+  const [error, setError] = useState("");
 
   const generateRoomCode = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    let result = ""
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
     // PRD FR-1.2: Room codes 4-6 characters. Let's do 5 characters for an optimal balance.
     for (let i = 0; i < 5; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length))
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    return result
-  }
+    return result;
+  };
 
   const handleCreateSession = async () => {
-    setIsCreating(true)
-    setError("")
-    
-    let roomCode = generateRoomCode()
-    let isCodeUnique = false
-    let attempts = 0
-    let sessionData = null
-    
+    setIsCreating(true);
+    setError("");
+
+    let roomCode = generateRoomCode();
+    let isCodeUnique = false;
+    let attempts = 0;
+    let sessionData = null;
+
     // Ensure uniqueness, fallback just in case
     while (!isCodeUnique && attempts < 3) {
       const { data, error } = await supabase
-        .from('sessions')
+        .from("sessions")
         .insert([{ room_code: roomCode }])
         .select()
-        .single()
+        .single();
 
       if (!error) {
-        isCodeUnique = true
-        sessionData = data
-      } else if (error.code === '23505') { // Postgres unique constraint violation code
-        roomCode = generateRoomCode()
-        attempts++
+        isCodeUnique = true;
+        sessionData = data;
+      } else if (error.code === "23505") {
+        // Postgres unique constraint violation code
+        roomCode = generateRoomCode();
+        attempts++;
       } else {
-        console.error(error)
-        break // Other unknown error
+        console.error(error);
+        break; // Other unknown error
       }
     }
 
     if (!isCodeUnique) {
-      setError("Failed to create session. Please try again.")
-      setIsCreating(false)
-      return
+      setError("Failed to create session. Please try again.");
+      setIsCreating(false);
+      return;
     }
 
     // Redirect to the new room
-    router.push(`/${roomCode}`)
-  }
+    router.push(`/${roomCode}`);
+  };
 
   const handleJoinSession = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!joinCode.trim()) return
+    e.preventDefault();
+    if (!joinCode.trim()) return;
 
-    setIsJoining(true)
-    setError("")
+    setIsJoining(true);
+    setError("");
 
-    const code = joinCode.toUpperCase().trim()
+    const code = joinCode.toUpperCase().trim();
 
     // Verify room exists
     const { data, error } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('room_code', code)
-      .single()
+      .from("sessions")
+      .select("id")
+      .eq("room_code", code)
+      .single();
 
     if (error || !data) {
-      setError("Room not found. Please check the code and try again.")
-      setIsJoining(false)
-      return
+      setError("Room not found. Please check the code and try again.");
+      setIsJoining(false);
+      return;
     }
 
-    router.push(`/${code}`)
-  }
+    router.push(`/${code}`);
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
-        
         {/* Header / Logo */}
         <div className="text-center space-y-2">
           <div className="bg-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-200">
             <Receipt className="text-white w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">ReceiptCrush</h1>
-          <p className="text-gray-500 font-medium">Split travel expenses with friends in 3 easy steps.</p>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            ReceiptCrush
+          </h1>
+          <p className="text-gray-500 font-medium">
+            Split travel expenses with friends in 3 easy steps.
+          </p>
         </div>
 
         {error && (
@@ -126,7 +130,9 @@ export default function Home() {
 
           <div className="relative flex items-center py-2">
             <div className="flex-grow border-t border-gray-200"></div>
-            <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">or</span>
+            <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">
+              or
+            </span>
             <div className="flex-grow border-t border-gray-200"></div>
           </div>
 
@@ -161,14 +167,15 @@ export default function Home() {
             </button>
           </form>
         </div>
-
       </div>
-      
+
       {/* Footer Info */}
       <div className="mt-8 text-center text-sm text-gray-500 space-y-1">
         <p className="font-medium">No account required.</p>
-        <p className="text-gray-400">Sessions automatically securely delete after 30 days.</p>
+        <p className="text-gray-400">
+          Sessions automatically securely delete after 30 days.
+        </p>
       </div>
     </main>
-  )
+  );
 }
