@@ -64,6 +64,8 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [roomCurrency, setRoomCurrency] = useState("USD");
+  const [isChangingCurrency, setIsChangingCurrency] = useState(false);
 
   // User State
   const [isJoined, setIsJoined] = useState(false);
@@ -113,6 +115,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
       }
 
       setSessionId(sessionData.id);
+      setRoomCurrency(sessionData.base_currency || "USD");
 
       // 2. Fetch Initial Participants
       await fetchParticipants(sessionData.id);
@@ -160,6 +163,35 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
       if (channel) supabase.removeChannel(channel);
     };
   }, [roomCode, router, supabase, fetchParticipants]);
+
+  const handleChangeCurrency = async (newCurrency: string) => {
+    if (newCurrency === roomCurrency || !sessionId) return;
+    const confirmChange = window.confirm(
+      `Are you sure you want to change the room currency to ${newCurrency}? Past receipts will be recalculated using historical exchange rates.`
+    );
+    if (!confirmChange) return;
+
+    setIsChangingCurrency(true);
+    try {
+      const res = await fetch("/api/change-currency", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, newCurrency }),
+      });
+      if (res.ok) {
+        setRoomCurrency(newCurrency);
+        // Refresh the page to get the newly calculated item prices everywhere
+        window.location.reload();
+      } else {
+        alert("Failed to change currency. Check console for details.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error changing currency");
+    } finally {
+      setIsChangingCurrency(false);
+    }
+  };
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -329,9 +361,27 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
     <main className="min-h-screen bg-gray-50 flex flex-col p-4 max-w-md mx-auto relative pt-12 pb-24">
       {/* Header */}
       <div className="text-center space-y-4 mb-8">
-        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-          Lobby
-        </h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            Lobby
+          </h1>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-500">Currency</span>
+            <select
+              value={roomCurrency}
+              onChange={(e) => handleChangeCurrency(e.target.value)}
+              disabled={isChangingCurrency}
+              className="bg-white border border-gray-200 text-gray-800 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 cursor-pointer font-semibold shadow-sm"
+            >
+              <option value="USD">USD ($)</option>
+              <option value="HKD">HKD (HK$)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="JPY">JPY (¥)</option>
+              <option value="AUD">AUD (A$)</option>
+            </select>
+          </div>
+        </div>
 
         {/* Shareable Pill */}
         <button
