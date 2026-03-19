@@ -359,7 +359,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
 
   // View 2: The Action Lobby
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col p-4 max-w-md mx-auto relative pt-12 pb-24">
+    <main className="min-h-screen bg-gray-50 flex flex-col p-4 max-w-md mx-auto relative pt-12 pb-48">
       {/* Header */}
       <div className="text-center space-y-4 mb-8">
         <div className="flex justify-between items-center mb-4">
@@ -513,12 +513,13 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
           )}
 
       {/* Bottom Floating Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pointer-events-none">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pointer-events-none z-50">
         <div className="max-w-md mx-auto pointer-events-auto">
           {sessionId && myParticipant && (
             <ReceiptUploader
               sessionId={sessionId}
               participantId={myParticipant.id}
+              roomCurrency={roomCurrency}
               onUploadSuccess={() => {
                 console.log("Upload triggered - refreshing views!");
                 setRefreshTrigger((prev) => prev + 1);

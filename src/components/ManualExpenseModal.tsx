@@ -1,28 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   sessionId: string;
   participantId: string;
+  roomCurrency: string;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
+const COMMON_CURRENCIES = ["USD", "EUR", "GBP", "JPY", "HKD", "SGD", "TWD", "AUD", "CAD"];
+
 export function ManualExpenseModal({
   sessionId,
   participantId,
+  roomCurrency,
   isOpen,
   onClose,
   onSuccess,
 }: Props) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [currency, setCurrency] = useState(roomCurrency);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const supabase = createClient();
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrency(roomCurrency);
+    }
+  }, [isOpen, roomCurrency]);
 
   if (!isOpen) return null;
 
@@ -31,14 +42,37 @@ export function ManualExpenseModal({
     setIsSubmitting(true);
 
     try {
+      let exchangeRate = 1.0;
+      const targetCurrency = currency.toUpperCase();
+      const baseRoomCurrency = roomCurrency.toUpperCase();
+
+      if (targetCurrency !== baseRoomCurrency) {
+        try {
+          const rateRes = await fetch(`https://open.er-api.com/v6/latest/${targetCurrency}`);
+          const rateData = await rateRes.json();
+          if (rateData && rateData.rates && rateData.rates[baseRoomCurrency]) {
+            exchangeRate = rateData.rates[baseRoomCurrency];
+          } else {
+            console.warn("Failed to get exchange rate, defaulting to 1");
+          }
+        } catch (e) {
+          console.warn("API request for exchange rate failed, defaulting to 1", e);
+        }
+      }
+
+      const originalPrice = parseFloat(price);
+      const convertedPrice = originalPrice * exchangeRate;
+
       // 1. Create a logical "receipt" to hold the expense
       const { data: receiptData, error: dbError } = await supabase
         .from("receipts")
         .insert({
           session_id: sessionId,
           uploader_id: participantId,
-          processing_status: "done", // Mark as done immediately
-          currency: "USD", // Assumes base currency initially
+          processing_status: "completed", // Fixed from "done" (not in enum)
+          currency: targetCurrency,
+          exchange_rate_to_base: exchangeRate,
+          image_url: "manual_entry", // Required column
         })
         .select()
         .single();
@@ -49,7 +83,7 @@ export function ManualExpenseModal({
       const { error: itemError } = await supabase.from("items").insert({
         receipt_id: receiptData.id,
         item_name: name.trim(),
-        price: parseFloat(price),
+        price: Number(convertedPrice.toFixed(2)),
       });
 
       if (itemError) throw itemError;
@@ -57,6 +91,7 @@ export function ManualExpenseModal({
       onSuccess();
       setName("");
       setPrice("");
+      setCurrency(roomCurrency);
       onClose();
     } catch (error) {
       console.error("Failed to add manual expense", error);
@@ -104,16 +139,25 @@ export function ManualExpenseModal({
             <label className="text-xs font-bold text-gray-500 uppercase">
               Amount
             </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">
-                $
-              </span>
+            <div className="flex gap-2">
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-bold text-gray-700 outline-none"
+              >
+                {!COMMON_CURRENCIES.includes(roomCurrency) && (
+                  <option value={roomCurrency}>{roomCurrency}</option>
+                )}
+                {COMMON_CURRENCIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="0.00"
-                className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-8 pr-4 py-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-bold text-gray-900"
+                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-bold text-gray-900"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 onKeyDown={(e) => {
@@ -121,6 +165,11 @@ export function ManualExpenseModal({
                 }}
               />
             </div>
+            {currency !== roomCurrency && (
+              <p className="text-xs text-gray-400 font-medium px-1 mt-1">
+                Will be converted to {roomCurrency} automatically
+              </p>
+            )}
           </div>
 
           <button

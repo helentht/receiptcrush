@@ -8,12 +8,14 @@ import { ManualExpenseModal } from "./ManualExpenseModal";
 interface Props {
   sessionId: string;
   participantId: string;
+  roomCurrency: string;
   onUploadSuccess?: () => void;
 }
 
 export function ReceiptUploader({
   sessionId,
   participantId,
+  roomCurrency,
   onUploadSuccess,
 }: Props) {
   const [isUploading, setIsUploading] = useState(false);
@@ -125,6 +127,7 @@ export function ReceiptUploader({
       <ManualExpenseModal
         sessionId={sessionId}
         participantId={participantId}
+        roomCurrency={roomCurrency}
         isOpen={isManualModalOpen}
         onClose={() => setIsManualModalOpen(false)}
         onSuccess={() => {

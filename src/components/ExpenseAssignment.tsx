@@ -16,6 +16,7 @@ import {
   Heart,
   Rocket,
   ChevronDown,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeeModal } from "./FeeModal";
@@ -146,8 +147,8 @@ export function ExpenseAssignment({
     // Optimistic update
     setReceipts((prev) => prev.filter((r) => r.id !== receiptId));
 
-    // Delete image from storage
-    if (imageUrl) {
+    // Delete image from storage if it's a real file
+    if (imageUrl && imageUrl !== "manual_entry") {
       // imageUrl looks like: .../storage/v1/object/public/receipts/[sessionId]/[filename]
       const filePath = imageUrl.split("/receipts/").pop();
       if (filePath) {
@@ -248,21 +249,23 @@ export function ExpenseAssignment({
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center",
-                  receipt.image_url
+                  "w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center shrink-0",
+                  receipt.image_url && receipt.image_url !== "manual_entry"
                     ? "cursor-pointer hover:opacity-80 transition-opacity"
                     : "",
                 )}
                 onClick={() =>
-                  receipt.image_url && setSelectedImage(receipt.image_url)
+                  receipt.image_url && receipt.image_url !== "manual_entry" && setSelectedImage(receipt.image_url)
                 }
               >
-                {receipt.image_url ? (
+                {receipt.image_url && receipt.image_url !== "manual_entry" ? (
                   <img
                     src={receipt.image_url}
                     alt="Receipt Thumbnail"
                     className="w-full h-full object-cover"
                   />
+                ) : receipt.image_url === "manual_entry" ? (
+                  <FileText className="w-5 h-5 text-gray-400" />
                 ) : (
                   <ImageIcon className="w-5 h-5 text-gray-400" />
                 )}
@@ -393,10 +396,10 @@ export function ExpenseAssignment({
                               : "bg-gray-200 text-gray-400 hover:bg-gray-300",
                           )}
                         >
-                          <span className="relative z-10 text-sm truncate max-w-[150px]">
+                          <span className="text-sm truncate max-w-[150px]">
                             {p.display_name}
                           </span>
-                          <Icon className="w-4 h-4 relative z-10 opacity-90" />
+                          <Icon className="w-4 h-4 opacity-90" />
                           {isAssigned && (
                             <div className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                               <svg
