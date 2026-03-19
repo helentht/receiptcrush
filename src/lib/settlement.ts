@@ -24,7 +24,6 @@ export interface SettlementRecord {
 
 export interface Participant {
   id: string;
-  [key: string]: string | number | boolean | null | undefined;
 }
 
 export interface CalculatedSettlement {
