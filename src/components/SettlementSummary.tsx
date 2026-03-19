@@ -17,6 +17,7 @@ interface Receipt {
   id: string;
   uploader_id: string;
   exchange_rate_to_base: number;
+  cc_fee_percentage?: number;
 }
 
 interface SettlementRecord {
@@ -57,7 +58,7 @@ export function SettlementSummary({
       // 1. Fetch Receipts (to know who paid)
       const { data: receiptsData } = await supabase
         .from("receipts")
-        .select("id, uploader_id, exchange_rate_to_base")
+        .select("id, uploader_id, exchange_rate_to_base, cc_fee_percentage")
         .eq("session_id", sessionId);
 
       if (!receiptsData || receiptsData.length === 0) {
@@ -108,7 +109,9 @@ export function SettlementSummary({
 
         // The item.price is already converted and saved in the DB in the base currency,
         // so we DO NOT multiply by the receipt's exchange rate here!
-        const actualPrice = item.price;
+        // We DO apply the credit card transaction fee percentage over the item price.
+        const feeMultiplier = 1 + (receipt.cc_fee_percentage || 0) / 100;
+        const actualPrice = item.price * feeMultiplier;
 
         // Uploader paid for this item
         if (
@@ -368,8 +371,10 @@ export function SettlementSummary({
                               const paidBy =
                                 getParticipant(receipt?.uploader_id || "")
                                   ?.display_name || "Someone";
+                              const feePct = receipt?.cc_fee_percentage || 0;
+                              const feeMultiplier = 1 + feePct / 100;
                               const splitPrice =
-                                item.price / (item.assigned_to?.length || 1);
+                                (item.price * feeMultiplier) / (item.assigned_to?.length || 1);
                               return (
                                 <div
                                   key={item.id}
@@ -382,6 +387,7 @@ export function SettlementSummary({
                                     <span className="text-xs text-gray-400 mt-0.5">
                                       pd by {paidBy} • split by{" "}
                                       {item.assigned_to?.length}
+                                      {feePct > 0 ? ` (+${feePct}% fee)` : ""}
                                     </span>
                                   </div>
                                   <span className="font-bold text-gray-700">

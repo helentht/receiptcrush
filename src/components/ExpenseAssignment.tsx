@@ -54,6 +54,7 @@ interface Receipt {
   processing_status: string;
   currency: string;
   uploader_id: string;
+  cc_fee_percentage: number;
   items: Item[];
 }
 
@@ -79,7 +80,9 @@ export function ExpenseAssignment({
 }) {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [editingPayerReceiptId, setEditingPayerReceiptId] = useState<string | null>(null);
+  const [editingPayerReceiptId, setEditingPayerReceiptId] = useState<
+    string | null
+  >(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -120,7 +123,7 @@ export function ExpenseAssignment({
     const { data } = await supabase
       .from("receipts")
       .select(
-        "id, image_url, processing_status, currency, uploader_id, items(id, receipt_id, item_name, item_image_url, price, assigned_to)",
+        "id, image_url, processing_status, currency, uploader_id, cc_fee_percentage, items(id, receipt_id, item_name, item_image_url, price, assigned_to)",
       )
       .eq("session_id", sessionId)
       .order("uploaded_at", { ascending: false });
@@ -181,12 +184,15 @@ export function ExpenseAssignment({
       .eq("id", itemId);
   };
 
-  const handleChangePayer = async (receiptId: string, newUploaderId: string) => {
+  const handleChangePayer = async (
+    receiptId: string,
+    newUploaderId: string,
+  ) => {
     // Optimistic update locally
     setReceipts(
       receipts.map((r) =>
-        r.id === receiptId ? { ...r, uploader_id: newUploaderId } : r
-      )
+        r.id === receiptId ? { ...r, uploader_id: newUploaderId } : r,
+      ),
     );
     setEditingPayerReceiptId(null);
 
@@ -197,6 +203,30 @@ export function ExpenseAssignment({
 
     if (error) {
       console.error("Error updating payer:", error);
+      fetchReceipts();
+    }
+  };
+
+  const handleChangeFee = async (
+    receiptId: string,
+    newFeeStr: string,
+  ) => {
+    const fee = parseFloat(newFeeStr) || 0;
+    
+    // Optimistic update
+    setReceipts(
+      receipts.map((r) =>
+        r.id === receiptId ? { ...r, cc_fee_percentage: fee } : r,
+      ),
+    );
+
+    const { error } = await supabase
+      .from("receipts")
+      .update({ cc_fee_percentage: fee })
+      .eq("id", receiptId);
+
+    if (error) {
+      console.error("Error updating CC fee:", error);
       fetchReceipts();
     }
   };
@@ -212,9 +242,16 @@ export function ExpenseAssignment({
         >
           <div className="flex items-center justify-between border-b border-gray-50 pb-3">
             <div className="flex items-center gap-3">
-              <div 
-                className={cn("w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center", receipt.image_url ? "cursor-pointer hover:opacity-80 transition-opacity" : "")}
-                onClick={() => receipt.image_url && setSelectedImage(receipt.image_url)}
+              <div
+                className={cn(
+                  "w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center",
+                  receipt.image_url
+                    ? "cursor-pointer hover:opacity-80 transition-opacity"
+                    : "",
+                )}
+                onClick={() =>
+                  receipt.image_url && setSelectedImage(receipt.image_url)
+                }
               >
                 {receipt.image_url ? (
                   <img
@@ -227,9 +264,13 @@ export function ExpenseAssignment({
                 )}
               </div>
               <div className="relative">
-                <h3 
+                <h3
                   className="font-bold text-gray-900 text-sm flex items-center gap-1 cursor-pointer hover:text-indigo-600 transition-colors"
-                  onClick={() => setEditingPayerReceiptId(editingPayerReceiptId === receipt.id ? null : receipt.id)}
+                  onClick={() =>
+                    setEditingPayerReceiptId(
+                      editingPayerReceiptId === receipt.id ? null : receipt.id,
+                    )
+                  }
                 >
                   Paid by{" "}
                   {participants.find((p) => p.id === receipt.uploader_id)
@@ -243,7 +284,9 @@ export function ExpenseAssignment({
                         key={p.id}
                         className={cn(
                           "w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors",
-                          p.id === receipt.uploader_id ? "font-bold text-indigo-600 bg-indigo-50/50" : "text-gray-700"
+                          p.id === receipt.uploader_id
+                            ? "font-bold text-indigo-600 bg-indigo-50/50"
+                            : "text-gray-700",
                         )}
                         onClick={() => handleChangePayer(receipt.id, p.id)}
                       >
@@ -252,12 +295,30 @@ export function ExpenseAssignment({
                     ))}
                   </div>
                 )}
-                <p className="text-xs text-gray-500">
-                  {receipt.processing_status === "processing"
-                    ? "AI is reading..."
-                    : receipt.processing_status === "failed"
-                      ? "Failed to read"
-                      : `${receipt.items?.length || 0} items`}
+                <p className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                  <span>
+                    {receipt.processing_status === "processing"
+                      ? "AI is reading..."
+                      : receipt.processing_status === "failed"
+                        ? "Failed to read"
+                        : `${receipt.items?.length || 0} items`}
+                  </span>
+                  {receipt.processing_status !== "processing" && receipt.processing_status !== "failed" && (
+                    <span className="flex items-center gap-1">
+                      <span className="text-gray-300">•</span>
+                      <span>+</span>
+                      <input
+                        type="number"
+                        className="w-12 text-xs bg-transparent border-b border-dashed border-gray-300 px-0.5 py-0 focus:outline-none focus:border-indigo-500 text-center"
+                        step="0.01"
+                        min="0"
+                        value={receipt.cc_fee_percentage || ""}
+                        placeholder="0"
+                        onChange={(e) => handleChangeFee(receipt.id, e.target.value)}
+                      />
+                      <span>% fee</span>
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
@@ -364,7 +425,7 @@ export function ExpenseAssignment({
 
       {/* Fullscreen Image Modal */}
       {selectedImage && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4 duration-200 animate-in fade-in"
           onClick={() => setSelectedImage(null)}
         >
@@ -373,9 +434,9 @@ export function ExpenseAssignment({
             <span className="absolute -top-8 text-white/90 text-sm font-medium drop-shadow-md">
               Tap anywhere to close
             </span>
-            <img 
-              src={selectedImage} 
-              alt="Full Receipt" 
+            <img
+              src={selectedImage}
+              alt="Full Receipt"
               className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
               onClick={(e) => e.stopPropagation()} // Let users tap outside to close, but not the image itself if we wanted. Actually, tapping image to close is fine too!
             />
