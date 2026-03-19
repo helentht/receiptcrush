@@ -524,35 +524,36 @@ _(Table 7: Product Risk Assessment)_
 
 ## Development Timeline
 
-**Phase 1: Foundation (Days 1-2)**
+**Phase 1: Foundation (Days 1-2) - Completed**
 
 - Project setup: Next.js, Tailwind, Supabase initialization
 - Database schema creation and migration scripts
 - Session creation and join flow (frontend + backend)
 - Basic responsive layout and navigation
 
-**Phase 2: Core Processing & Integrations (Days 3-5)**
+**Phase 2: Core Processing & Integrations (Days 3-5) - Completed**
 
 - Image upload interface with compression
 - API integration for receipt parsing and currency conversion
 - Integration of online image search API for product thumbnails
 - Real-time state synchronization setup (Supabase Realtime)
 
-**Phase 3: Interactive UI & Assignment (Days 6-8)**
+**Phase 3: Interactive UI & Assignment (Days 6-8) - Completed**
 
 - Expense assignment UI (multiple-choice interface)
 - Item assignment logic and optimistic UI updates
 - Database operations for assignment events
-- Edge case logic (handling conflicts, unassigning)
+- Edge case logic (handling conflicts, unassigning, reassigning payer)
 
-**Phase 4: Settlement (Day 9)**
+**Phase 4: Settlement (Day 9) - Completed**
 
 - Settlement calculation and debt simplification algorithm
 - Settlement summary UI and export/share functionality
 - End-to-end user flow integration
 
-**Phase 5: Polish & Launch (Day 10)**
+**Phase 5: Polish & Launch (Day 10) - In Progress**
 
+- UX polish: receipt image popups, expanded settlement details
 - Error handling and loading states
 - Mobile responsiveness refinement
 - User testing with real receipts
