@@ -4,13 +4,13 @@ A modern, collaborative web application designed to securely and efficiently spl
 
 ## Getting Started
 
-1. Copy `.env.local.example` to `.env.local` and add your Supabase and Anthropic API keys.
+1. Copy `.env.local.example` to `.env.local` and add your Supabase and OpenRouter API keys.
 2. Run `npm install` and then `npm run dev`.
 3. Open http://localhost:3000
 
 ## Features
 
 - Zero-login rooms via room code
-- Claude-3.5-Sonnet receipt parsing
+- Qwen Vision receipt parsing (via OpenRouter)
 - Real-time expense assignment
 - Intelligent Settlement calculation

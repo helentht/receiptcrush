@@ -87,7 +87,7 @@ ReceiptCrush addresses these pain points through:
     - Progress indicator shows upload status for each image
 - **US-202:** As the system, I want to automatically parse receipt images using AI vision models, so that users don't have to manually enter item details.
   - **Acceptance Criteria:**
-    - Integration with API: Call `anthropic/claude-3.5-sonnet` via OpenRouter, or call the Claude API directly through Google Cloud (Vertex AI)
+    - Integration with API: Call a Qwen Vision model (e.g. `qwen/qwen-vl-plus`) via OpenRouter
     * Extraction of: item names (auto-translated to English/local language if foreign), original item names, individual prices, quantities, tax, total amount, and receipt currency
     - Response format: structured JSON with standardized schema
     - Fallback error handling for unparseable receipts
@@ -180,7 +180,7 @@ _(Table 1: Session Management Requirements)_
 | ------ | ---------------------------------------------------------------------------------- |
 | FR-2.1 | System shall accept JPEG, PNG, and HEIC image formats                              |
 | FR-2.2 | Client shall compress images to maximum 1920px width before upload                 |
-| FR-2.3 | System shall parse receipts using Claude 3.5 Sonnet Vision API with JSON mode      |
+| FR-2.3 | System shall parse receipts using Qwen Vision API with JSON mode                   |
 | FR-2.4 | Parsed data schema shall include: items\[\], itemName, price, quantity, tax, total |
 | FR-2.5 | System shall handle parsing failures gracefully with manual entry fallback         |
 | FR-2.6 | Processing status shall be visible to all participants in real-time                |
@@ -262,7 +262,7 @@ _(Table 4: Settlement Calculation Requirements)_
 | Styling      | Tailwind CSS                | Rapid UI development, mobile-first utilities                   |
 | Database     | Supabase (PostgreSQL)       | Real-time subscriptions, easy setup, generous free tier        |
 | File Storage | Cloudflare R2 / Vercel Blob | Cost-effective image storage, fast CDN delivery                |
-| AI Vision    | Anthropic Claude 3.5 Sonnet | High accuracy OCR, JSON mode support, multi-language           |
+| AI Vision    | OpenRouter (Qwen Vision)    | High accuracy OCR, JSON mode support, multi-language           |
 | Deployment   | Vercel                      | Seamless Next.js integration, edge functions, zero-config      |
 | Real-time    | Supabase Realtime           | WebSocket-based sync, PostgreSQL integration                   |
 
@@ -349,17 +349,16 @@ _(Table 5: Recommended Technology Stack)_
 
 ### AI Vision & External APIs Integration
 
-**Claude AI Vision Implementation:**
+**Qwen AI Vision Implementation:**
 
-- **Model:** Claude 3.5 Sonnet (`anthropic/claude-3.5-sonnet`)
+- **Model:** Qwen Vision (`qwen/qwen-vl-plus` or `qwen/qwen-2.5-vl` via OpenRouter)
 - **Input:** Base64-encoded receipt image
 - **Prompt template:** "Extract all items, prices, and quantities from this receipt. If the receipt is in a foreign language, translate the item names to English (or the user's local language) for the `itemName` field, but keep the original text in `originalItemName`. Return structured JSON with fields: items (array), itemName (string), originalItemName (string), price (number), quantity (number), tax (number), total (number), currency (string)."
 - **Response format:** JSON
 - **Error handling:** Retry logic for API failures, manual entry fallback
 - **Cost optimization:** Image compression to reduce token usage
 - **Implementation Options:**
-  - Call `anthropic/claude-3.5-sonnet` via OpenRouter
-  - Or call the Claude API directly through Google Cloud (Vertex AI)
+  - Call Qwen Vision models directly via OpenRouter
 
 **Online Image Search Integration:**
 
@@ -512,7 +511,7 @@ _(Table 5: Recommended Technology Stack)_
 | Risk                                                | Impact | Mitigation                                                            |
 | --------------------------------------------------- | ------ | --------------------------------------------------------------------- |
 | AI parsing inaccuracy on handwritten/faded receipts | High   | Provide manual entry fallback; focus MVP on printed receipts          |
-| Claude API rate limits during high usage            | Medium | Implement queueing system; consider backup OCR provider               |
+| OpenRouter/Qwen API rate limits during high usage   | Medium | Implement queueing system; consider backup OCR provider               |
 | Real-time sync failures on poor network             | Medium | Implement optimistic UI updates; retry logic with exponential backoff |
 | Database scalability beyond MVP                     | Low    | Use cloud-native DB (Supabase) with auto-scaling                      |
 
