@@ -75,7 +75,9 @@ export function SettlementSummary({
         const receipt = receiptMap.get(item.receipt_id);
         if (!receipt) return;
 
-        const actualPrice = item.price * (receipt.exchange_rate_to_base || 1);
+        // The item.price is already converted and saved in the DB in the base currency,
+        // so we DO NOT multiply by the receipt's exchange rate here!
+        const actualPrice = item.price;
 
         // Uploader paid for this item
         if (
