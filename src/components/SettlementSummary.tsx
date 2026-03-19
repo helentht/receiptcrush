@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Participant } from "./ExpenseAssignment";
-import { ArrowRight, Loader2, DollarSign, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { ArrowRight, Loader2, DollarSign, Check } from "lucide-react";
 
 interface Item {
   id: string;
@@ -305,53 +305,76 @@ export function SettlementSummary({
                     <div className="font-bold text-indigo-600">
                       ${s.amount.toFixed(2)}
                     </div>
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400"/> : <ChevronDown className="w-4 h-4 text-gray-400"/>}
                   </div>
                 </div>
 
-                {/* Details Drawer */}
+                {/* Details Modal Popup */}
                 {isExpanded && (
-                  <div className="p-4 bg-white border-t border-gray-100/50 space-y-3">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      What {fromP.display_name} owes for:
-                    </h4>
-                    {debtorItems.length > 0 ? (
-                      <div className="space-y-2">
-                        {debtorItems.map(item => {
-                          const receipt = rawReceipts.find(r => r.id === item.receipt_id);
-                          const paidBy = getParticipant(receipt?.uploader_id || "")?.display_name || "Someone";
-                          const splitPrice = item.price / (item.assigned_to?.length || 1);
-                          return (
-                            <div key={item.id} className="flex justify-between items-center text-sm">
-                              <div className="flex flex-col">
-                                <span className="text-gray-800">{item.item_name}</span>
-                                <span className="text-xs text-gray-400">pd by {paidBy} • split by {item.assigned_to?.length}</span>
-                              </div>
-                              <span className="font-medium text-gray-700">${splitPrice.toFixed(2)}</span>
-                            </div>
-                          );
-                        })}
+                  <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+                      <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                        <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                          <span className="text-indigo-600">{fromP.display_name}</span>
+                          <ArrowRight className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-900">{toP.display_name}</span>
+                        </h3>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedRow(null);
+                          }}
+                          className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors"
+                        >
+                          ✕
+                        </button>
                       </div>
-                    ) : (
-                      <div className="text-sm text-gray-500 italic">No specific assigned items found (debt may be from manual adjustments or net rounding).</div>
-                    )}
 
-                    <div className="pt-3 mt-3 border-t border-gray-100 flex justify-end">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkAsPaid(idx, s);
-                        }}
-                        disabled={isPaying === idx}
-                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
-                      >
-                        {isPaying === idx ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                      <div className="p-4 overflow-y-auto space-y-4">
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          What {fromP.display_name} owes for:
+                        </h4>
+                        {debtorItems.length > 0 ? (
+                          <div className="space-y-3">
+                            {debtorItems.map(item => {
+                              const receipt = rawReceipts.find(r => r.id === item.receipt_id);
+                              const paidBy = getParticipant(receipt?.uploader_id || "")?.display_name || "Someone";
+                              const splitPrice = item.price / (item.assigned_to?.length || 1);
+                              return (
+                                <div key={item.id} className="flex justify-between items-center text-sm p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-800 font-medium">{item.item_name}</span>
+                                    <span className="text-xs text-gray-400 mt-0.5">pd by {paidBy} • split by {item.assigned_to?.length}</span>
+                                  </div>
+                                  <span className="font-bold text-gray-700">${splitPrice.toFixed(2)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         ) : (
-                          <Check className="w-4 h-4" />
+                          <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded-xl border border-gray-100 placeholder:">No specific assigned items found (debt may be from manual adjustments or net rounding).</div>
                         )}
-                        Mark as Paid
-                      </button>
+                      </div>
+
+                      <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
+                        <div className="text-lg font-bold text-indigo-600">
+                          Total: ${s.amount.toFixed(2)}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkAsPaid(idx, s);
+                          }}
+                          disabled={isPaying === idx}
+                          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+                        >
+                          {isPaying === idx ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Check className="w-5 h-5" />
+                          )}
+                          Mark as Paid
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
