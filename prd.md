@@ -99,12 +99,12 @@ ReceiptCrush addresses these pain points through:
     - Payer can be manually changed if needed (edge case: someone else paid)
     - Visual indicator shows "Paid by [Name]" on receipt card
 
-* **US-204:** As a participant traveling internationally, I want the system to automatically convert foreign receipt currencies to my group's local currency, so that settlements are calculated in a single familiar currency.
+* **US-204:** As a participant traveling internationally, I want the system to automatically convert foreign receipt currencies to my group's local currency at the time of upload, locking in the price so that settlements are predictably calculated in a single familiar currency.
   - **Acceptance Criteria:**
-    - System identifies the foreign currency from the AI-parsed receipt data (e.g., JPY, EUR)
-    - System uses an exchange rate API to fetch the current (or user-adjustable) conversion rate relative to the session's base currency
-    - Original foreign amount and converted local amount are both displayed to the user
-    - Settlement engine calculates final debts purely using the converted local currency amounts
+    - AI exclusively extracts the precise original price and currency from the receipt (e.g., JPY, EUR) _without_ performing mathematical conversions itself, and extracts the receipt date.
+    - System uses a historical exchange rate API (e.g., Frankfurter) matching the receipt's date to fetch the conversion rate relative to the session's base currency.
+    - The converted local amount is permanently saved into the `items` database table so debts do not fluctuate later due to exchange rate changes.
+    - The `settlements` table acts strictly as a ledger for finalized transactions (e.g. "Mark as Paid"), while live calculations of optimal debts happen dynamically on the frontend.
 
 ### Epic 3: Expense Assignment Interface
 

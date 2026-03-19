@@ -48,11 +48,13 @@ export async function POST(req: Request) {
 
       const prompt = `You are a helpful receipt-parsing assistant. Examine this receipt image.
 Identify all the purchased line items. Ignore subtotal, tax, tip, and total. 
-Also, try to detect the currency of the receipt (e.g., "USD", "JPY", "EUR").
+Detect the currency of the receipt (e.g., "USD", "JPY", "EUR"). DO NOT convert the prices yourself, extract the exact prices written on the receipt.
+Also, search the receipt for the printed date of the transaction and format it as "YYYY-MM-DD" (e.g., "2024-03-15").
 
 Return ONLY a valid JSON object with the following structure:
 {
   "currency": "JPY",
+  "date": "2024-03-15",
   "items": [
     {
       "item_name": "Exact description (clean up abbreviations if needed)",
@@ -84,6 +86,7 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
 
       let parsedData: {
         currency?: string;
+        date?: string;
         items: { item_name: string; price: number; [key: string]: unknown }[];
       } = { currency: baseCurrency, items: [] };
       try {
@@ -99,6 +102,7 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
         } else {
           parsedData = {
             currency: parsed.currency || baseCurrency,
+            date: parsed.date,
             items: parsed.items || [],
           };
         }
@@ -110,27 +114,60 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
       // Automatically convert to base currency if it's different
       let exchangeRate = 1.0;
       const finalCurrency = parsedData.currency || baseCurrency;
+      const receiptDate =
+        parsedData.date || new Date().toISOString().split("T")[0]; // Fallback to today if not found
+
       if (finalCurrency !== baseCurrency) {
         try {
           console.log(
-            `Fetching exchange rate for ${finalCurrency} to ${baseCurrency}...`,
+            `Fetching historical exchange rate for ${finalCurrency} to ${baseCurrency} on date: ${receiptDate}...`,
           );
-          // Using a free open exchange rate API
-          const rateRes = await fetch(
-            `https://open.er-api.com/v6/latest/${finalCurrency}`,
+          // Try Frankfurter API first for historical daily rates (supports major currencies USD, JPY, EUR, etc.)
+          const frankfurterRes = await fetch(
+            `https://api.frankfurter.app/${receiptDate}?from=${finalCurrency}&to=${baseCurrency}`,
           );
-          const rateData = await rateRes.json();
-          if (rateData && rateData.rates && rateData.rates[baseCurrency]) {
-            exchangeRate = rateData.rates[baseCurrency];
-            console.log(
-              `Exchange rate found: 1 ${finalCurrency} = ${exchangeRate} ${baseCurrency}`,
+
+          if (frankfurterRes.ok) {
+            const frankfurterData = await frankfurterRes.json();
+            if (
+              frankfurterData &&
+              frankfurterData.rates &&
+              frankfurterData.rates[baseCurrency]
+            ) {
+              exchangeRate = frankfurterData.rates[baseCurrency];
+              console.log(
+                `Historical rate found: 1 ${finalCurrency} = ${exchangeRate} ${baseCurrency} on ${receiptDate}`,
+              );
+            } else {
+              throw new Error("Frankfurter payload missing rates.");
+            }
+          } else {
+            throw new Error(
+              "Frankfurter API failed or currency string unsupported.",
             );
           }
-        } catch (rateErr) {
-          console.error(
-            "Failed to fetch exchange rate, falling back to 1.0",
-            rateErr,
+        } catch (histErr) {
+          console.log(
+            `Historical rate fetch failed (${(histErr as Error).message}), attempting fallback to latest open.er-api.com...`,
           );
+          try {
+            // Using a free open exchange rate API (latest rates)
+            const rateRes = await fetch(
+              `https://open.er-api.com/v6/latest/${finalCurrency}`,
+            );
+            const rateData = await rateRes.json();
+            if (rateData && rateData.rates && rateData.rates[baseCurrency]) {
+              exchangeRate = rateData.rates[baseCurrency];
+              console.log(
+                `Latest exchange rate fallback found: 1 ${finalCurrency} = ${exchangeRate} ${baseCurrency}`,
+              );
+            }
+          } catch (rateErr) {
+            console.error(
+              "Failed to fetch exchange rate entirely, falling back to 1.0",
+              rateErr,
+            );
+          }
         }
       }
 

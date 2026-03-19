@@ -4,7 +4,18 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { User, Image as ImageIcon, Trash2, Smile, Cat, Dog, Zap, Star, Heart, Rocket } from "lucide-react";
+import {
+  User,
+  Image as ImageIcon,
+  Trash2,
+  Smile,
+  Cat,
+  Dog,
+  Zap,
+  Star,
+  Heart,
+  Rocket,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -71,13 +82,26 @@ export function ExpenseAssignment({
 
     // Subscribe to receipts and items changes
     const rChannel = supabase
-      .channel('receipts_channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'receipts', filter: `session_id=eq.${sessionId}` }, fetchReceipts)
+      .channel("receipts_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "receipts",
+          filter: `session_id=eq.${sessionId}`,
+        },
+        fetchReceipts,
+      )
       .subscribe();
-      
+
     const iChannel = supabase
-      .channel('items_channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, fetchReceipts)
+      .channel("items_channel")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "items" },
+        fetchReceipts,
+      )
       .subscribe();
 
     return () => {
@@ -89,7 +113,9 @@ export function ExpenseAssignment({
   const fetchReceipts = async () => {
     const { data } = await supabase
       .from("receipts")
-      .select("id, image_url, processing_status, currency, uploader_id, items(id, receipt_id, item_name, item_image_url, price, assigned_to)")
+      .select(
+        "id, image_url, processing_status, currency, uploader_id, items(id, receipt_id, item_name, item_image_url, price, assigned_to)",
+      )
       .eq("session_id", sessionId)
       .order("uploaded_at", { ascending: false });
 
@@ -99,15 +125,16 @@ export function ExpenseAssignment({
   };
 
   const deleteReceipt = async (receiptId: string, imageUrl: string | null) => {
-    if (!window.confirm("Are you sure you want to delete this receipt?")) return;
-    
+    if (!window.confirm("Are you sure you want to delete this receipt?"))
+      return;
+
     // Optimistic update
-    setReceipts(prev => prev.filter(r => r.id !== receiptId));
+    setReceipts((prev) => prev.filter((r) => r.id !== receiptId));
 
     // Delete image from storage
     if (imageUrl) {
       // imageUrl looks like: .../storage/v1/object/public/receipts/[sessionId]/[filename]
-      const filePath = imageUrl.split('/receipts/').pop();
+      const filePath = imageUrl.split("/receipts/").pop();
       if (filePath) {
         await supabase.storage.from("receipts").remove([filePath]);
       }
@@ -118,57 +145,78 @@ export function ExpenseAssignment({
     await supabase.from("receipts").delete().eq("id", receiptId);
   };
 
-  const toggleAssignment = async (itemId: string, currentAssignedTo: string[] | null, participantId: string) => {
+  const toggleAssignment = async (
+    itemId: string,
+    currentAssignedTo: string[] | null,
+    participantId: string,
+  ) => {
     let newAssignedTo = currentAssignedTo ? [...currentAssignedTo] : [];
-    
+
     if (newAssignedTo.includes(participantId)) {
-      newAssignedTo = newAssignedTo.filter(id => id !== participantId);
+      newAssignedTo = newAssignedTo.filter((id) => id !== participantId);
     } else {
       newAssignedTo.push(participantId);
     }
 
     // Optimistic update locally
-    setReceipts(receipts.map(r => ({
-      ...r,
-      items: r.items.map(i => i.id === itemId ? { ...i, assigned_to: newAssignedTo } : i)
-    })));
+    setReceipts(
+      receipts.map((r) => ({
+        ...r,
+        items: r.items.map((i) =>
+          i.id === itemId ? { ...i, assigned_to: newAssignedTo } : i,
+        ),
+      })),
+    );
 
     // Send to DB
-    await supabase.from("items").update({ assigned_to: newAssignedTo }).eq("id", itemId);
+    await supabase
+      .from("items")
+      .update({ assigned_to: newAssignedTo })
+      .eq("id", itemId);
   };
 
   if (receipts.length === 0) return null;
 
   return (
     <div className="space-y-6 mb-32">
-      {receipts.map(receipt => (
-        <div key={receipt.id} className="bg-white border border-gray-100 rounded-3xl p-4 shadow-sm space-y-4">
-          
+      {receipts.map((receipt) => (
+        <div
+          key={receipt.id}
+          className="bg-white border border-gray-100 rounded-3xl p-4 shadow-sm space-y-4"
+        >
           <div className="flex items-center justify-between border-b border-gray-50 pb-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
                 {receipt.image_url ? (
-                  <img src={receipt.image_url} alt="Receipt Thumbnail" className="w-full h-full object-cover" />
+                  <img
+                    src={receipt.image_url}
+                    alt="Receipt Thumbnail"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <ImageIcon className="w-5 h-5 text-gray-400" />
                 )}
               </div>
               <div>
                 <h3 className="font-bold text-gray-900 text-sm">
-                  Paid by {participants.find(p => p.id === receipt.uploader_id)?.display_name || "Someone"}
+                  Paid by{" "}
+                  {participants.find((p) => p.id === receipt.uploader_id)
+                    ?.display_name || "Someone"}
                 </h3>
                 <p className="text-xs text-gray-500">
-                  {receipt.processing_status === 'processing' ? 'AI is reading...' : 
-                   receipt.processing_status === 'failed' ? 'Failed to read' : 
-                   `${receipt.items?.length || 0} items`}
+                  {receipt.processing_status === "processing"
+                    ? "AI is reading..."
+                    : receipt.processing_status === "failed"
+                      ? "Failed to read"
+                      : `${receipt.items?.length || 0} items`}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {receipt.processing_status === 'processing' && (
+              {receipt.processing_status === "processing" && (
                 <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
               )}
-              <button 
+              <button
                 onClick={() => deleteReceipt(receipt.id, receipt.image_url)}
                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                 title="Delete receipt"
@@ -179,43 +227,58 @@ export function ExpenseAssignment({
           </div>
 
           <div className="space-y-4">
-            {receipt.items?.map(item => (
-              <div key={item.id} className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3 shadow-sm border-b-2">
+            {receipt.items?.map((item) => (
+              <div
+                key={item.id}
+                className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3 shadow-sm border-b-2"
+              >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     {item.item_image_url ? (
-                      <img src={item.item_image_url} alt={item.item_name} className="w-12 h-12 rounded-xl object-cover border border-gray-200" />
+                      <img
+                        src={item.item_image_url}
+                        alt={item.item_name}
+                        className="w-12 h-12 rounded-xl object-cover border border-gray-200"
+                      />
                     ) : (
                       <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center border border-gray-200">
                         <ImageIcon className="w-5 h-5 text-gray-400" />
                       </div>
                     )}
                     <div>
-                      <p className="font-bold text-gray-900 text-sm capitalize leading-tight">{item.item_name}</p>
+                      <p className="font-bold text-gray-900 text-sm capitalize leading-tight">
+                        {item.item_name}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-black text-indigo-700 text-lg">${item.price}</p>
+                    <p className="font-black text-indigo-700 text-lg">
+                      ${item.price}
+                    </p>
                   </div>
                 </div>
 
                 <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-inner">
-                  <p className="text-[10px] font-bold tracking-wider uppercase text-gray-400 text-center mb-3">Tap to Split Expense</p>
+                  <p className="text-[10px] font-bold tracking-wider uppercase text-gray-400 text-center mb-3">
+                    Tap to Split Expense
+                  </p>
                   <div className="flex flex-wrap gap-2 justify-center">
-                    {participants.map(p => {
+                    {participants.map((p) => {
                       const isAssigned = item.assigned_to?.includes(p.id);
-                      const baseColor = COLORS[p.avatar_color] || 'bg-gray-800';
+                      const baseColor = COLORS[p.avatar_color] || "bg-gray-800";
                       const Icon = AVATARS[p.avatar_icon as AvatarKey] || User;
-                      
+
                       return (
                         <button
                           key={p.id}
-                          onClick={() => toggleAssignment(item.id, item.assigned_to, p.id)}
+                          onClick={() =>
+                            toggleAssignment(item.id, item.assigned_to, p.id)
+                          }
                           className={cn(
                             "group relative h-10 px-3 min-w-[3.5rem] rounded-xl flex items-center justify-center gap-1.5 text-white font-bold transition-all active:scale-90",
-                            isAssigned 
-                              ? `${baseColor} shadow-md ring-2 ring-offset-1` 
-                              : "bg-gray-200 text-gray-400 hover:bg-gray-300"
+                            isAssigned
+                              ? `${baseColor} shadow-md ring-2 ring-offset-1`
+                              : "bg-gray-200 text-gray-400 hover:bg-gray-300",
                           )}
                         >
                           <span className="relative z-10 text-sm truncate max-w-[150px]">
@@ -224,8 +287,18 @@ export function ExpenseAssignment({
                           <Icon className="w-4 h-4 relative z-10 opacity-90" />
                           {isAssigned && (
                             <div className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={3}
+                                  d="M5 13l4 4L19 7"
+                                />
                               </svg>
                             </div>
                           )}

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { ReceiptUploader } from "@/components/ReceiptUploader";
 import { ExpenseAssignment } from "@/components/ExpenseAssignment";
+import { SettlementSummary } from "@/components/SettlementSummary";
 
 // --- Config Data ---
 const AVATARS = {
@@ -77,6 +78,9 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
 
   // UI State
   const [copiedLink, setCopiedLink] = useState(false);
+  const [activeTab, setActiveTab] = useState<"expenses" | "settlement">(
+    "expenses",
+  );
 
   const fetchParticipants = useCallback(
     async (sid: string) => {
@@ -410,14 +414,50 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
         </div>
       </div>
 
-      {/* Interactive Expense Assignment */}
-      {sessionId && myParticipant && (
-        <ExpenseAssignment
-          sessionId={sessionId}
-          participants={participants}
-          myParticipantId={myParticipant.id}
-        />
-      )}
+      {/* Tabs */}
+      <div className="flex bg-gray-200/50 p-1 rounded-xl mb-6">
+        <button
+          onClick={() => setActiveTab("expenses")}
+          className={cn(
+            "flex-1 py-2 text-sm font-semibold rounded-lg transition-all",
+            activeTab === "expenses"
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-700",
+          )}
+        >
+          Expenses
+        </button>
+        <button
+          onClick={() => setActiveTab("settlement")}
+          className={cn(
+            "flex-1 py-2 text-sm font-semibold rounded-lg transition-all",
+            activeTab === "settlement"
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-700",
+          )}
+        >
+          Settlement
+        </button>
+      </div>
+
+      {/* Main Content Area */}
+      {activeTab === "expenses"
+        ? sessionId &&
+          myParticipant && (
+            <ExpenseAssignment
+              sessionId={sessionId}
+              participants={participants}
+              myParticipantId={myParticipant.id}
+            />
+          )
+        : sessionId &&
+          myParticipant && (
+            <SettlementSummary
+              sessionId={sessionId}
+              participants={participants}
+              myParticipantId={myParticipant.id}
+            />
+          )}
 
       {/* Bottom Floating Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pointer-events-none">
