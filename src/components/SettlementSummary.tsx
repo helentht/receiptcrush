@@ -24,7 +24,7 @@ interface SettlementRecord {
   from_participant_id: string;
   to_participant_id: string;
   amount: number;
-  status: 'pending' | 'completed';
+  status: "pending" | "completed";
   created_at: string;
 }
 
@@ -42,7 +42,9 @@ export function SettlementSummary({
   const [settlements, setSettlements] = useState<
     { from: string; to: string; amount: number }[]
   >([]);
-  const [completedSettlements, setCompletedSettlements] = useState<SettlementRecord[]>([]);
+  const [completedSettlements, setCompletedSettlements] = useState<
+    SettlementRecord[]
+  >([]);
   const [rawItems, setRawItems] = useState<Item[]>([]);
   const [rawReceipts, setRawReceipts] = useState<Receipt[]>([]);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -87,7 +89,8 @@ export function SettlementSummary({
 
       setRawItems(itemsData);
       setRawReceipts(receiptsData);
-      if (settlementsData) setCompletedSettlements(settlementsData as SettlementRecord[]);
+      if (settlementsData)
+        setCompletedSettlements(settlementsData as SettlementRecord[]);
 
       // Calculate initial balances: total paid - total owed
       const userBalances: Record<string, number> = {};
@@ -137,7 +140,10 @@ export function SettlementSummary({
       // Apply completed settlements
       if (settlementsData) {
         settlementsData.forEach((s) => {
-          if (userBalances[s.from_participant_id] !== undefined && userBalances[s.to_participant_id] !== undefined) {
+          if (
+            userBalances[s.from_participant_id] !== undefined &&
+            userBalances[s.to_participant_id] !== undefined
+          ) {
             userBalances[s.from_participant_id] += Number(s.amount);
             userBalances[s.to_participant_id] -= Number(s.amount);
           }
@@ -235,27 +241,33 @@ export function SettlementSummary({
   const getParticipant = (id: string) => participants.find((p) => p.id === id);
 
   const formatDateTime = (isoString: string) => {
-    return new Date(isoString).toLocaleString('en-US', {
-      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+    return new Date(isoString).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
     });
   };
 
-  const handleMarkAsPaid = async (idx: number, s: { from: string; to: string; amount: number }) => {
+  const handleMarkAsPaid = async (
+    idx: number,
+    s: { from: string; to: string; amount: number },
+  ) => {
     setIsPaying(idx);
-    
+
     // Insert a new completed settlement record
     const { error } = await supabase.from("settlements").insert({
       session_id: sessionId,
       from_participant_id: s.from,
       to_participant_id: s.to,
       amount: s.amount,
-      status: 'completed'
+      status: "completed",
     });
-    
+
     if (error) {
       console.error("Failed to mark as paid:", error);
     }
-    
+
     setIsPaying(null);
   };
 
@@ -279,15 +291,19 @@ export function SettlementSummary({
 
             // Find items this debtor consumed that they didn't pay for, where the creditor paid
             const debtorItems = rawItems.filter(
-              (item) => 
-                item.assigned_to?.includes(s.from) && 
-                rawReceipts.find(r => r.id === item.receipt_id)?.uploader_id === s.to
+              (item) =>
+                item.assigned_to?.includes(s.from) &&
+                rawReceipts.find((r) => r.id === item.receipt_id)
+                  ?.uploader_id === s.to,
             );
 
             const isExpanded = expandedRow === idx;
 
             return (
-              <div key={idx} className="bg-gray-50 rounded-2xl overflow-hidden shadow-sm">
+              <div
+                key={idx}
+                className="bg-gray-50 rounded-2xl overflow-hidden shadow-sm"
+              >
                 <div
                   className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => setExpandedRow(isExpanded ? null : idx)}
@@ -310,13 +326,23 @@ export function SettlementSummary({
 
                 {/* Details Modal Popup */}
                 {isExpanded && (
-                  <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
-                    <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+                  <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/20 backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200"
+                    onClick={() => setExpandedRow(null)}
+                  >
+                    <div
+                      className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[80vh]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                         <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                          <span className="text-indigo-600">{fromP.display_name}</span>
+                          <span className="text-indigo-600">
+                            {fromP.display_name}
+                          </span>
                           <ArrowRight className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-900">{toP.display_name}</span>
+                          <span className="text-gray-900">
+                            {toP.display_name}
+                          </span>
                         </h3>
                         <button
                           onClick={(e) => {
@@ -335,23 +361,41 @@ export function SettlementSummary({
                         </h4>
                         {debtorItems.length > 0 ? (
                           <div className="space-y-3">
-                            {debtorItems.map(item => {
-                              const receipt = rawReceipts.find(r => r.id === item.receipt_id);
-                              const paidBy = getParticipant(receipt?.uploader_id || "")?.display_name || "Someone";
-                              const splitPrice = item.price / (item.assigned_to?.length || 1);
+                            {debtorItems.map((item) => {
+                              const receipt = rawReceipts.find(
+                                (r) => r.id === item.receipt_id,
+                              );
+                              const paidBy =
+                                getParticipant(receipt?.uploader_id || "")
+                                  ?.display_name || "Someone";
+                              const splitPrice =
+                                item.price / (item.assigned_to?.length || 1);
                               return (
-                                <div key={item.id} className="flex justify-between items-center text-sm p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <div
+                                  key={item.id}
+                                  className="flex justify-between items-center text-sm p-3 bg-gray-50 rounded-xl border border-gray-100"
+                                >
                                   <div className="flex flex-col">
-                                    <span className="text-gray-800 font-medium">{item.item_name}</span>
-                                    <span className="text-xs text-gray-400 mt-0.5">pd by {paidBy} • split by {item.assigned_to?.length}</span>
+                                    <span className="text-gray-800 font-medium">
+                                      {item.item_name}
+                                    </span>
+                                    <span className="text-xs text-gray-400 mt-0.5">
+                                      pd by {paidBy} • split by{" "}
+                                      {item.assigned_to?.length}
+                                    </span>
                                   </div>
-                                  <span className="font-bold text-gray-700">${splitPrice.toFixed(2)}</span>
+                                  <span className="font-bold text-gray-700">
+                                    ${splitPrice.toFixed(2)}
+                                  </span>
                                 </div>
                               );
                             })}
                           </div>
                         ) : (
-                          <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded-xl border border-gray-100 placeholder:">No specific assigned items found (debt may be from manual adjustments or net rounding).</div>
+                          <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded-xl border border-gray-100 placeholder:">
+                            No specific assigned items found (debt may be from
+                            manual adjustments or net rounding).
+                          </div>
                         )}
                       </div>
 
@@ -393,34 +437,44 @@ export function SettlementSummary({
           <div className="space-y-3">
             {completedSettlements
               // Sort newest first
-              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .sort(
+                (a, b) =>
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime(),
+              )
               .map((cs) => {
-              const fromP = getParticipant(cs.from_participant_id);
-              const toP = getParticipant(cs.to_participant_id);
-              if (!fromP || !toP) return null;
+                const fromP = getParticipant(cs.from_participant_id);
+                const toP = getParticipant(cs.to_participant_id);
+                if (!fromP || !toP) return null;
 
-              return (
-                <div key={cs.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-100 gap-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-medium text-gray-600 line-through decoration-gray-400">
-                      {fromP.display_name}
-                    </span>
-                    <ArrowRight className="w-3 h-3 text-gray-400" />
-                    <span className="font-medium text-gray-600 line-through decoration-gray-400">
-                      {toP.display_name}
-                    </span>
+                return (
+                  <div
+                    key={cs.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-100 gap-2"
+                  >
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-medium text-gray-600 line-through decoration-gray-400">
+                        {fromP.display_name}
+                      </span>
+                      <ArrowRight className="w-3 h-3 text-gray-400" />
+                      <span className="font-medium text-gray-600 line-through decoration-gray-400">
+                        {toP.display_name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-400 line-through decoration-gray-400">
+                        ${Number(cs.amount).toFixed(2)}
+                      </span>
+                      <span
+                        className="text-xs text-gray-400 flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-gray-100"
+                        title={formatDateTime(cs.created_at)}
+                      >
+                        <Check className="w-3 h-3 text-green-500" /> Paid
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold text-gray-400 line-through decoration-gray-400">
-                      ${Number(cs.amount).toFixed(2)}
-                    </span>
-                    <span className="text-xs text-gray-400 flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-gray-100" title={formatDateTime(cs.created_at)}>
-                      <Check className="w-3 h-3 text-green-500" /> Paid
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
       )}

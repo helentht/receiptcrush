@@ -365,12 +365,12 @@ export function ExpenseAssignment({
       {/* Fullscreen Image Modal */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 duration-200 animate-in fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4 duration-200 animate-in fade-in"
           onClick={() => setSelectedImage(null)}
         >
           <div className="relative w-full max-w-4xl max-h-[90vh] flex items-center justify-center">
             {/* Close instruction */}
-            <span className="absolute -top-8 text-white/70 text-sm font-medium">
+            <span className="absolute -top-8 text-white/90 text-sm font-medium drop-shadow-md">
               Tap anywhere to close
             </span>
             <img 
