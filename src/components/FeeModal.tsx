@@ -3,8 +3,10 @@ export function FeeModal({
   setFeeModalParams,
   handleChangeFee,
 }: {
-  feeModalParams: { receiptId: string; fee: number };
-  setFeeModalParams: (params: { receiptId: string; fee: number } | null) => void;
+  feeModalParams: { receiptId: string; fee: number } | null;
+  setFeeModalParams: (
+    params: { receiptId: string; fee: number } | null,
+  ) => void;
   handleChangeFee: (receiptId: string, feePercentage: number) => Promise<void>;
 }) {
   if (!feeModalParams) return null;
@@ -52,10 +54,7 @@ export function FeeModal({
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  handleChangeFee(
-                    feeModalParams.receiptId,
-                    feeModalParams.fee,
-                  );
+                  handleChangeFee(feeModalParams.receiptId, feeModalParams.fee);
                   setFeeModalParams(null);
                 }
               }}
@@ -72,10 +71,7 @@ export function FeeModal({
             </button>
             <button
               onClick={() => {
-                handleChangeFee(
-                  feeModalParams.receiptId,
-                  feeModalParams.fee,
-                );
+                handleChangeFee(feeModalParams.receiptId, feeModalParams.fee);
                 setFeeModalParams(null);
               }}
               className="flex-1 py-3 font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-sm"

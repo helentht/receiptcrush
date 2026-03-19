@@ -5,7 +5,7 @@ export function PriceDetailModal({
   priceDetailParams: {
     item: { item_name: string; price: number };
     receipt: { cc_fee_percentage?: number };
-  };
+  } | null;
   setPriceDetailParams: (params: null) => void;
 }) {
   if (!priceDetailParams) return null;
