@@ -15,6 +15,7 @@ import {
   Star,
   Heart,
   Rocket,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +78,8 @@ export function ExpenseAssignment({
   refreshTrigger?: number;
 }) {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [editingPayerReceiptId, setEditingPayerReceiptId] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -110,6 +113,7 @@ export function ExpenseAssignment({
       supabase.removeChannel(rChannel);
       supabase.removeChannel(iChannel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, supabase, refreshTrigger]);
 
   const fetchReceipts = async () => {
@@ -177,6 +181,26 @@ export function ExpenseAssignment({
       .eq("id", itemId);
   };
 
+  const handleChangePayer = async (receiptId: string, newUploaderId: string) => {
+    // Optimistic update locally
+    setReceipts(
+      receipts.map((r) =>
+        r.id === receiptId ? { ...r, uploader_id: newUploaderId } : r
+      )
+    );
+    setEditingPayerReceiptId(null);
+
+    const { error } = await supabase
+      .from("receipts")
+      .update({ uploader_id: newUploaderId })
+      .eq("id", receiptId);
+
+    if (error) {
+      console.error("Error updating payer:", error);
+      fetchReceipts();
+    }
+  };
+
   if (receipts.length === 0) return null;
 
   return (
@@ -188,7 +212,10 @@ export function ExpenseAssignment({
         >
           <div className="flex items-center justify-between border-b border-gray-50 pb-3">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
+              <div 
+                className={cn("w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center", receipt.image_url ? "cursor-pointer hover:opacity-80 transition-opacity" : "")}
+                onClick={() => receipt.image_url && setSelectedImage(receipt.image_url)}
+              >
                 {receipt.image_url ? (
                   <img
                     src={receipt.image_url}
@@ -199,12 +226,32 @@ export function ExpenseAssignment({
                   <ImageIcon className="w-5 h-5 text-gray-400" />
                 )}
               </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-sm">
+              <div className="relative">
+                <h3 
+                  className="font-bold text-gray-900 text-sm flex items-center gap-1 cursor-pointer hover:text-indigo-600 transition-colors"
+                  onClick={() => setEditingPayerReceiptId(editingPayerReceiptId === receipt.id ? null : receipt.id)}
+                >
                   Paid by{" "}
                   {participants.find((p) => p.id === receipt.uploader_id)
                     ?.display_name || "Someone"}
+                  <ChevronDown className="w-3 h-3 text-gray-400" />
                 </h3>
+                {editingPayerReceiptId === receipt.id && (
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-10 py-1">
+                    {participants.map((p) => (
+                      <button
+                        key={p.id}
+                        className={cn(
+                          "w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors",
+                          p.id === receipt.uploader_id ? "font-bold text-indigo-600 bg-indigo-50/50" : "text-gray-700"
+                        )}
+                        onClick={() => handleChangePayer(receipt.id, p.id)}
+                      >
+                        {p.display_name}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <p className="text-xs text-gray-500">
                   {receipt.processing_status === "processing"
                     ? "AI is reading..."
@@ -314,6 +361,27 @@ export function ExpenseAssignment({
           </div>
         </div>
       ))}
+
+      {/* Fullscreen Image Modal */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 duration-200 animate-in fade-in"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex items-center justify-center">
+            {/* Close instruction */}
+            <span className="absolute -top-8 text-white/70 text-sm font-medium">
+              Tap anywhere to close
+            </span>
+            <img 
+              src={selectedImage} 
+              alt="Full Receipt" 
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()} // Let users tap outside to close, but not the image itself if we wanted. Actually, tapping image to close is fine too!
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

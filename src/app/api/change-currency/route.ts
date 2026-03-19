@@ -110,10 +110,10 @@ export async function POST(req: Request) {
       success: true,
       message: `Successfully changed room currency to ${newCurrency} and recalculated past receipts.`,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error changing room currency:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 },
     );
   }

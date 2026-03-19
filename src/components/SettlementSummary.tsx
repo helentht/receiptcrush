@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Participant } from "./ExpenseAssignment";
-import { ArrowRight, Loader2, DollarSign } from "lucide-react";
+import { ArrowRight, Loader2, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Item {
   id: string;
   receipt_id: string;
+  item_name: string;
   price: number;
   assigned_to: string[] | null;
 }
@@ -32,6 +33,9 @@ export function SettlementSummary({
   const [settlements, setSettlements] = useState<
     { from: string; to: string; amount: number }[]
   >([]);
+  const [rawItems, setRawItems] = useState<Item[]>([]);
+  const [rawReceipts, setRawReceipts] = useState<Receipt[]>([]);
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
   const supabase = createClient();
 
@@ -62,6 +66,9 @@ export function SettlementSummary({
         setLoading(false);
         return;
       }
+
+      setRawItems(itemsData);
+      setRawReceipts(receiptsData);
 
       // Calculate initial balances: total paid - total owed
       const userBalances: Record<string, number> = {};
@@ -211,23 +218,66 @@ export function SettlementSummary({
             const toP = getParticipant(s.to);
             if (!fromP || !toP) return null;
 
+            // Find items this debtor consumed that they didn't pay for, where the creditor paid
+            const debtorItems = rawItems.filter(
+              (item) => 
+                item.assigned_to?.includes(s.from) && 
+                rawReceipts.find(r => r.id === item.receipt_id)?.uploader_id === s.to
+            );
+
+            const isExpanded = expandedRow === idx;
+
             return (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="font-semibold text-gray-800">
-                    {fromP.display_name}
+              <div key={idx} className="bg-gray-50 rounded-2xl overflow-hidden shadow-sm">
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => setExpandedRow(isExpanded ? null : idx)}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="font-semibold text-gray-800">
+                      {fromP.display_name}
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-400" />
+                    <div className="font-semibold text-gray-800">
+                      {toP.display_name}
+                    </div>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-400" />
-                  <div className="font-semibold text-gray-800">
-                    {toP.display_name}
+                  <div className="flex items-center gap-3">
+                    <div className="font-bold text-indigo-600">
+                      ${s.amount.toFixed(2)}
+                    </div>
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400"/> : <ChevronDown className="w-4 h-4 text-gray-400"/>}
                   </div>
                 </div>
-                <div className="font-bold text-indigo-600">
-                  ${s.amount.toFixed(2)}
-                </div>
+
+                {/* Details Drawer */}
+                {isExpanded && (
+                  <div className="p-4 bg-white border-t border-gray-100/50 space-y-3">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      What {fromP.display_name} owes for:
+                    </h4>
+                    {debtorItems.length > 0 ? (
+                      <div className="space-y-2">
+                        {debtorItems.map(item => {
+                          const receipt = rawReceipts.find(r => r.id === item.receipt_id);
+                          const paidBy = getParticipant(receipt?.uploader_id || "")?.display_name || "Someone";
+                          const splitPrice = item.price / (item.assigned_to?.length || 1);
+                          return (
+                            <div key={item.id} className="flex justify-between items-center text-sm">
+                              <div className="flex flex-col">
+                                <span className="text-gray-800">{item.item_name}</span>
+                                <span className="text-xs text-gray-400">pd by {paidBy} • split by {item.assigned_to?.length}</span>
+                              </div>
+                              <span className="font-medium text-gray-700">${splitPrice.toFixed(2)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">No specific assigned items found (debt may be from manual adjustments or net rounding).</div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
