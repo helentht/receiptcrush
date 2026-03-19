@@ -21,10 +21,12 @@ interface Receipt {
 export function SettlementSummary({
   sessionId,
   participants,
+  refreshTrigger = 0,
 }: {
   sessionId: string;
   participants: Participant[];
   myParticipantId: string;
+  refreshTrigger?: number;
 }) {
   const [loading, setLoading] = useState(true);
   const [settlements, setSettlements] = useState<
@@ -179,7 +181,7 @@ export function SettlementSummary({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [sessionId, participants, supabase]);
+  }, [sessionId, participants, supabase, refreshTrigger]);
 
   if (loading) {
     return (

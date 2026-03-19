@@ -69,10 +69,12 @@ export function ExpenseAssignment({
   sessionId,
   participants,
   myParticipantId,
+  refreshTrigger = 0,
 }: {
   sessionId: string;
   participants: Participant[];
   myParticipantId: string;
+  refreshTrigger?: number;
 }) {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const supabase = createClient();
@@ -80,7 +82,7 @@ export function ExpenseAssignment({
   useEffect(() => {
     fetchReceipts();
 
-    // Subscribe to receipts and items changes
+    // Subscribe to receipts and items changes (requires Supabase Realtime to be enabled on these tables)
     const rChannel = supabase
       .channel("receipts_channel")
       .on(
@@ -108,7 +110,7 @@ export function ExpenseAssignment({
       supabase.removeChannel(rChannel);
       supabase.removeChannel(iChannel);
     };
-  }, [sessionId, supabase]);
+  }, [sessionId, supabase, refreshTrigger]);
 
   const fetchReceipts = async () => {
     const { data } = await supabase

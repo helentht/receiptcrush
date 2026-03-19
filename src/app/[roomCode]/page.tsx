@@ -83,6 +83,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
   const [activeTab, setActiveTab] = useState<"expenses" | "settlement">(
     "expenses",
   );
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const fetchParticipants = useCallback(
     async (sid: string) => {
@@ -498,6 +499,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
               sessionId={sessionId}
               participants={participants}
               myParticipantId={myParticipant.id}
+              refreshTrigger={refreshTrigger}
             />
           )
         : sessionId &&
@@ -506,6 +508,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
               sessionId={sessionId}
               participants={participants}
               myParticipantId={myParticipant.id}
+              refreshTrigger={refreshTrigger}
             />
           )}
 
@@ -517,8 +520,8 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
               sessionId={sessionId}
               participantId={myParticipant.id}
               onUploadSuccess={() => {
-                // We'll add feedback or reload navigation later
-                console.log("Upload triggered!");
+                console.log("Upload triggered - refreshing views!");
+                setRefreshTrigger((prev) => prev + 1);
               }}
             />
           )}
