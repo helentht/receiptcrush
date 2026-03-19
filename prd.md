@@ -587,6 +587,31 @@ _(Table 7: Product Risk Assessment)_
 - Vercel deployment platform availability
 - Third-party service uptime (AI, Image Search API, Supabase, Cloudflare)
 
+## Phase 2 Roadmap: User Authentication & Room Management
+
+*Status: In Planning*
+
+As the application moves past its MVP phase ("zero-login" approach), the following features will be introduced to enhance security, persistence, and user control.
+
+### 1. User Authentication
+- Support for persistent user accounts.
+- Integration with Supabase Auth for **Google Login** and **Email Login**.
+- Participants link their sessions/data to a unified user profile.
+
+### 2. User Dashboard
+- A dedicated `/dashboard` UI for authenticated users.
+- Displays a consolidated view of:
+  - **Rooms Hosted:** Sessions the user has created.
+  - **Rooms Joined:** Sessions the user has participated in.
+- Easy access to "Create New Room" directly from the dashboard.
+
+### 3. Room Host Approval Workflow
+- When a new user navigates to a room link, they must log in.
+- Instead of auto-joining, the user is placed into a `pending` state.
+- **Creator Controls:** The room creator has administrative rights.
+- Creators receive a new UI to **Approve** or **Reject** pending users.
+- Only approved users can view receipts, expenses, or the final settlement.
+
 ## Open Questions
 
 - Should the system support tax and tip allocation separately, or include them in item prices?
