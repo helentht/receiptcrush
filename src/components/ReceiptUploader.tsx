@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ManualExpenseModal } from "./ManualExpenseModal";
 
 interface Props {
   sessionId: string;
@@ -16,6 +17,7 @@ export function ReceiptUploader({
   onUploadSuccess,
 }: Props) {
   const [isUploading, setIsUploading] = useState(false);
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
@@ -111,6 +113,24 @@ export function ReceiptUploader({
           </>
         )}
       </button>
+
+      <button
+        onClick={() => setIsManualModalOpen(true)}
+        className="w-full mt-3 py-3 text-sm font-bold text-gray-500 hover:text-indigo-600 hover:bg-white rounded-2xl transition-all flex items-center justify-center gap-2 border border-transparent shadow-sm bg-white/50 backdrop-blur-sm"
+      >
+        <Plus className="w-4 h-4" />
+        Type expense manually
+      </button>
+
+      <ManualExpenseModal
+        sessionId={sessionId}
+        participantId={participantId}
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+        onSuccess={() => {
+          if (onUploadSuccess) onUploadSuccess();
+        }}
+      />
     </div>
   );
 }
