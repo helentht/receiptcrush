@@ -14,3 +14,6 @@ A modern, collaborative web application designed to securely and efficiently spl
 - Qwen Vision receipt parsing (via OpenRouter)
 - Real-time expense assignment
 - Intelligent Settlement calculation
+
+**Note on AI Models:** ReceiptCrush uses the standard `openai` SDK under the hood. You aren't locked into OpenRouter—just swap the `baseURL` in `src/app/api/process-receipt/route.ts` to easily use other OpenAI-compatible vision APIs (e.g., OpenAI, Gemini, Groq, or xAI).
+
