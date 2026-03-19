@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Participant } from "./ExpenseAssignment";
 import { ArrowRight, Loader2, DollarSign, Check } from "lucide-react";
 
+import { calculateSettlements } from "@/lib/settlement";
+
 interface Item {
   id: string;
   receipt_id: string;
@@ -93,114 +95,12 @@ export function SettlementSummary({
       if (settlementsData)
         setCompletedSettlements(settlementsData as SettlementRecord[]);
 
-      // Calculate initial balances: total paid - total owed
-      const userBalances: Record<string, number> = {};
-      participants.forEach((p) => {
-        userBalances[p.id] = 0;
-      });
-
-      // Map receipts
-      const receiptMap = new Map<string, Receipt>();
-      receiptsData.forEach((r) => receiptMap.set(r.id, r));
-
-      itemsData.forEach((item) => {
-        const receipt = receiptMap.get(item.receipt_id);
-        if (!receipt) return;
-
-        // The item.price is already converted and saved in the DB in the base currency,
-        // so we DO NOT multiply by the receipt's exchange rate here!
-        // We DO apply the credit card transaction fee percentage over the item price.
-        const feeMultiplier = 1 + (receipt.cc_fee_percentage || 0) / 100;
-        const actualPrice = item.price * feeMultiplier;
-
-        // Uploader paid for this item
-        if (
-          receipt.uploader_id &&
-          userBalances[receipt.uploader_id] !== undefined
-        ) {
-          userBalances[receipt.uploader_id] += actualPrice;
-        }
-
-        // Assigned participants owe for this item
-        if (item.assigned_to && item.assigned_to.length > 0) {
-          const splitAmount = actualPrice / item.assigned_to.length;
-          item.assigned_to.forEach((userId) => {
-            if (userBalances[userId] !== undefined) {
-              userBalances[userId] -= splitAmount;
-            }
-          });
-        } else {
-          // If no one is assigned, the uploader defaults as the owner (net zero)
-          if (
-            receipt.uploader_id &&
-            userBalances[receipt.uploader_id] !== undefined
-          ) {
-            userBalances[receipt.uploader_id] -= actualPrice;
-          }
-        }
-      });
-
-      // Apply completed settlements
-      if (settlementsData) {
-        settlementsData.forEach((s) => {
-          if (
-            userBalances[s.from_participant_id] !== undefined &&
-            userBalances[s.to_participant_id] !== undefined
-          ) {
-            userBalances[s.from_participant_id] += Number(s.amount);
-            userBalances[s.to_participant_id] -= Number(s.amount);
-          }
-        });
-      }
-
-      // Debt Simplification Algorithm
-      const debtors: { id: string; amount: number }[] = [];
-      const creditors: { id: string; amount: number }[] = [];
-
-      Object.entries(userBalances).forEach(([id, bal]) => {
-        // Round to 2 decimal places to avoid float precision issues
-        const roundedBal = Math.round(bal * 100) / 100;
-
-        if (roundedBal <= -0.01)
-          debtors.push({ id, amount: Math.abs(roundedBal) });
-        else if (roundedBal >= 0.01) creditors.push({ id, amount: roundedBal });
-      });
-
-      debtors.sort((a, b) => b.amount - a.amount);
-      creditors.sort((a, b) => b.amount - a.amount);
-
-      const calculatedSettlements: {
-        from: string;
-        to: string;
-        amount: number;
-      }[] = [];
-
-      let dIndex = 0;
-      let cIndex = 0;
-
-      while (dIndex < debtors.length && cIndex < creditors.length) {
-        const debtor = debtors[dIndex];
-        const creditor = creditors[cIndex];
-
-        const amount = Math.min(debtor.amount, creditor.amount);
-
-        if (amount > 0) {
-          const finalAmount = parseFloat(amount.toFixed(2));
-          if (finalAmount > 0) {
-            calculatedSettlements.push({
-              from: debtor.id,
-              to: creditor.id,
-              amount: finalAmount,
-            });
-          }
-        }
-
-        debtor.amount -= amount;
-        creditor.amount -= amount;
-
-        if (debtor.amount < 0.01) dIndex++;
-        if (creditor.amount < 0.01) cIndex++;
-      }
+      const { calculatedSettlements } = calculateSettlements(
+        itemsData as Item[],
+        receiptsData as Receipt[],
+        participants,
+        (settlementsData || []) as SettlementRecord[]
+      );
 
       setSettlements(calculatedSettlements);
       setLoading(false);
