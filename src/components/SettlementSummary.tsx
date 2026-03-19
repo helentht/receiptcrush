@@ -374,7 +374,8 @@ export function SettlementSummary({
                               const feePct = receipt?.cc_fee_percentage || 0;
                               const feeMultiplier = 1 + feePct / 100;
                               const splitPrice =
-                                (item.price * feeMultiplier) / (item.assigned_to?.length || 1);
+                                (item.price * feeMultiplier) /
+                                (item.assigned_to?.length || 1);
                               return (
                                 <div
                                   key={item.id}
