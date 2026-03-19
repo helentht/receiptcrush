@@ -96,7 +96,7 @@ ReceiptCrush addresses these pain points through:
 * **US-203:** As a participant, I want the system to automatically associate my uploaded receipts with me as the payer, so that I don't have to manually specify who paid.
   - **Acceptance Criteria:**
     - Uploader's name is automatically set as the payer for all items in that receipt
-    - Payer can be manually changed if needed (edge case: someone else paid)
+    - Payer can be manually changed if needed via an inline dropdown selector (edge case: someone else paid)
     - Visual indicator shows "Paid by [Name]" on receipt card
 
 * **US-204:** As a participant traveling internationally, I want the system to automatically convert foreign receipt currencies to my group's local currency at the time of upload, locking in the price so that settlements are predictably calculated in a single familiar currency.
@@ -105,6 +105,12 @@ ReceiptCrush addresses these pain points through:
     - System uses a historical exchange rate API (e.g., Frankfurter) matching the receipt's date to fetch the conversion rate relative to the session's base currency.
     - The converted local amount is permanently saved into the `items` database table so debts do not fluctuate later due to exchange rate changes.
     - The `settlements` table acts strictly as a ledger for finalized transactions (e.g. "Mark as Paid"), while live calculations of optimal debts happen dynamically on the frontend.
+
+* **US-205:** As a participant paying with a credit card, I want to add a custom transaction fee percentage, so that any credit card fees are fairly split among the group.
+  - **Acceptance Criteria:**
+    - Ability to input a credit card fee percentage directly on the receipt card UI.
+    - System dynamically updates the total cost calculations in the settlements engine without mutating the base item price.
+    - Settlement details explicitly indicate when a credit card fee has been applied to a split item.
 
 ### Epic 3: Expense Assignment Interface
 
@@ -290,6 +296,7 @@ _(Table 5: Recommended Technology Stack)_
 - image_url (TEXT)
 - currency (VARCHAR(3), default: 'USD')
 - exchange_rate_to_base (DECIMAL(10,4), default: 1.0)
+- cc_fee_percentage (DECIMAL(5,2), default: 0.00)
 - parsed_data (JSONB)
 - uploaded_at (TIMESTAMP)
 - processing_status (ENUM: pending, processing, completed, failed)
@@ -543,13 +550,16 @@ _(Table 7: Product Risk Assessment)_
 - Expense assignment UI (multiple-choice interface)
 - Item assignment logic and optimistic UI updates
 - Database operations for assignment events
+- Feature polish: Payer reassignment dropdown, receipt image preview popups, and credit card fee injection
 - Edge case logic (handling conflicts, unassigning, reassigning payer)
 
 **Phase 4: Settlement (Day 9) - Completed**
 
-- Settlement calculation and debt simplification algorithm
-- Settlement summary UI and export/share functionality
-- End-to-end user flow integration
+- Settlement calculation and debt simplification algorithm, taking dynamically applied CC fees into account
+- Database write operations to finalize payments (inserting into `settlements` table)
+- Interactive settlement UI (layered modal popups for individual settlement rows, "Mark as Paid" functionality)
+- Real time visual updates on remaining user balances
+- Settlement history log integration
 
 **Phase 5: Polish & Launch (Day 10) - In Progress**
 
