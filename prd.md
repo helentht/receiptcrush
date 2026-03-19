@@ -587,7 +587,7 @@ _(Table 7: Product Risk Assessment)_
 - Vercel deployment platform availability
 - Third-party service uptime (AI, Image Search API, Supabase, Cloudflare)
 
-## Phase 2 Roadmap: User Authentication & Room Management
+## V2 Roadmap: User Authentication & Room Management
 
 *Status: In Planning*
 
