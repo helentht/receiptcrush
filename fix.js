@@ -1,6 +1,6 @@
-const fs = require('fs');
-const file = 'src/components/ReceiptUploader.tsx';
-let content = fs.readFileSync(file, 'utf8');
+const fs = require("fs");
+const file = "src/components/ReceiptUploader.tsx";
+let content = fs.readFileSync(file, "utf8");
 
 content = content.replace(
   /const handleFileChange = async \(e: React\.ChangeEvent<HTMLInputElement>\) => \{[\s\S]*?if \(onUploadSuccess\) onUploadSuccess\(\);\n    \} catch \(error\) \{/,
@@ -61,12 +61,12 @@ content = content.replace(
       await Promise.all(uploadPromises);
 
       if (onUploadSuccess) onUploadSuccess();
-    } catch (error) {`
+    } catch (error) {`,
 );
 
 content = content.replace(
   '<input\n        type="file"\n        accept="image/*"\n        className="hidden"\n        ref={fileInputRef}\n        onChange={handleFileChange}\n      />',
-  '<input\n        type="file"\n        accept="image/*"\n        multiple\n        className="hidden"\n        ref={fileInputRef}\n        onChange={handleFileChange}\n      />'
+  '<input\n        type="file"\n        accept="image/*"\n        multiple\n        className="hidden"\n        ref={fileInputRef}\n        onChange={handleFileChange}\n      />',
 );
 
 fs.writeFileSync(file, content);

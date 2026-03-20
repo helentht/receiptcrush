@@ -8,6 +8,7 @@ import {
   User,
   Image as ImageIcon,
   Trash2,
+  RefreshCw,
   Smile,
   Cat,
   Dog,
@@ -165,6 +166,38 @@ export function ExpenseAssignment({
     // Delete items first (in case cascade is not set), then receipt
     await supabase.from("items").delete().eq("receipt_id", receiptId);
     await supabase.from("receipts").delete().eq("id", receiptId);
+  };
+
+  const retryRecognition = async (receiptId: string) => {
+    if (!window.confirm("Retrying will delete all current parsed items for this receipt and re-run the AI. Are you sure?"))
+      return;
+
+    // Optimistically show processing animation & clear items
+    setReceipts((prev) =>
+      prev.map((r) =>
+        r.id === receiptId ? { ...r, processing_status: "processing", items: [] } : r,
+      ),
+    );
+
+    // Delete existing items in Supabase to avoid duplicates
+    await supabase.from("items").delete().eq("receipt_id", receiptId);
+
+    // Update receipt status
+    await supabase
+      .from("receipts")
+      .update({ processing_status: "processing" })
+      .eq("id", receiptId);
+
+    try {
+      // Re-trigger the edge-function route
+      await fetch("/api/process-receipt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receiptId }),
+      });
+    } catch (error) {
+      console.error("Error retrying AI process:", error);
+    }
   };
 
   const toggleAssignment = async (
@@ -341,6 +374,15 @@ export function ExpenseAssignment({
               {receipt.processing_status === "processing" && (
                 <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
               )}
+              {receipt.processing_status !== "processing" && receipt.image_url !== "manual_entry" && (
+                <button
+                  onClick={() => retryRecognition(receipt.id)}
+                  className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
+                  title="Retry AI scan"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                </button>
+              )}
               <button
                 onClick={() => deleteReceipt(receipt.id, receipt.image_url)}
                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
@@ -363,8 +405,8 @@ export function ExpenseAssignment({
                       <img
                         src={item.item_image_url}
                         alt={item.item_name}
-                          className="w-12 h-12 rounded-xl object-cover border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => setSelectedImage(item.item_image_url)}
+                        className="w-12 h-12 rounded-xl object-cover border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setSelectedImage(item.item_image_url)}
                       />
                     ) : (
                       <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center border border-gray-200">

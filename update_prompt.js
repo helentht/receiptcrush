@@ -1,6 +1,6 @@
-const fs = require('fs');
-const file = 'src/app/api/process-receipt/route.ts';
-let content = fs.readFileSync(file, 'utf8');
+const fs = require("fs");
+const file = "src/app/api/process-receipt/route.ts";
+let content = fs.readFileSync(file, "utf8");
 
 const newPrompt = `You are a helpful receipt-parsing assistant. Examine this receipt image.
 Identify all the purchased line items. Ignore subtotal, tax, tip, and total. 
@@ -27,6 +27,9 @@ Return ONLY a valid JSON object with the following structure:
 Output strictly just the JSON object. No markdown formatting block, no other text!`;
 
 // Note: escaping regex special characters
-content = content.replace(/const prompt \= `You are a helpful receipt\-parsing assistant\.[\s\S]*?Output strictly just the JSON object\. No markdown formatting block, no other text!`;/, 'const prompt = `' + newPrompt + '`;');
+content = content.replace(
+  /const prompt \= `You are a helpful receipt\-parsing assistant\.[\s\S]*?Output strictly just the JSON object\. No markdown formatting block, no other text!`;/,
+  "const prompt = `" + newPrompt + "`;",
+);
 
 fs.writeFileSync(file, content);

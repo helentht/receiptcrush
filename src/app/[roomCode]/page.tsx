@@ -112,7 +112,9 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
 
     const init = async () => {
       // 0. Get Auth User
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) setCurrentUser(user);
 
       // 1. Validate Session
@@ -152,13 +154,19 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
       let matchedParticipant = null;
 
       if (user && sessionParticipants) {
-        matchedParticipant = sessionParticipants.find((p) => p.user_id === user.id);
+        matchedParticipant = sessionParticipants.find(
+          (p) => p.user_id === user.id,
+        );
       }
 
       if (!matchedParticipant) {
-        const savedUserId = localStorage.getItem(`receiptcrush_user_${roomCode}`);
+        const savedUserId = localStorage.getItem(
+          `receiptcrush_user_${roomCode}`,
+        );
         if (savedUserId && sessionParticipants) {
-          matchedParticipant = sessionParticipants.find((p) => p.id === savedUserId);
+          matchedParticipant = sessionParticipants.find(
+            (p) => p.id === savedUserId,
+          );
         }
       }
 
@@ -249,7 +257,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
 
   const handleClaimParticipant = async (participantId: string) => {
     if (!currentUser) return;
-    
+
     // Check if user already claimed someone in this room
     if (participants.some((p) => p.user_id === currentUser.id)) {
       alert("You have already claimed a profile in this room.");
@@ -263,9 +271,9 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
         .eq("id", participantId)
         .select()
         .single();
-        
+
       if (error) throw error;
-      
+
       setMyParticipant(data);
       setIsJoined(true);
       localStorage.setItem(`receiptcrush_user_${roomCode}`, data.id);
@@ -278,29 +286,38 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
     }
   };
 
-    const handleUpdateName = async (participantId: string, newName: string) => {
-      const trimmedName = newName.trim();
-      setEditingNameId(null);
-      
-      if (!trimmedName || !sessionId || trimmedName === myParticipant?.display_name) return;
+  const handleUpdateName = async (participantId: string, newName: string) => {
+    const trimmedName = newName.trim();
+    setEditingNameId(null);
 
-      // Optimistically update
-      setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, display_name: trimmedName } : p));
-      if (myParticipant && myParticipant.id === participantId) {
-        setMyParticipant({ ...myParticipant, display_name: trimmedName });
-      }
+    if (
+      !trimmedName ||
+      !sessionId ||
+      trimmedName === myParticipant?.display_name
+    )
+      return;
 
-      const { error } = await supabase
-        .from("participants")
-        .update({ display_name: trimmedName })
-        .eq("id", participantId);
+    // Optimistically update
+    setParticipants((prev) =>
+      prev.map((p) =>
+        p.id === participantId ? { ...p, display_name: trimmedName } : p,
+      ),
+    );
+    if (myParticipant && myParticipant.id === participantId) {
+      setMyParticipant({ ...myParticipant, display_name: trimmedName });
+    }
 
-      if (error) {
-        console.error("Failed to update name:", error);
-        // Refresh from server to revert optimistic update if failed
-        fetchParticipants(sessionId);
-      }
-    };
+    const { error } = await supabase
+      .from("participants")
+      .update({ display_name: trimmedName })
+      .eq("id", participantId);
+
+    if (error) {
+      console.error("Failed to update name:", error);
+      // Refresh from server to revert optimistic update if failed
+      fetchParticipants(sessionId);
+    }
+  };
 
   // --- Rendering ---
 
@@ -493,10 +510,13 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
             const colorClass =
               COLORS.find((c) => c.id === p.avatar_color)?.class ||
               "bg-gray-800";
-              
+
             const isMe = p.id === myParticipant?.id;
             const isClaimed = !!p.user_id;
-            const isClaimable = currentUser && !isClaimed && !participants.some(x => x.user_id === currentUser.id);
+            const isClaimable =
+              currentUser &&
+              !isClaimed &&
+              !participants.some((x) => x.user_id === currentUser.id);
 
             return (
               <div
@@ -512,9 +532,9 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
                 >
                   <Icon className="w-7 h-7" />
                 </div>
-                
+
                 {editingNameId === p.id && isMe ? (
-                  <form 
+                  <form
                     onSubmit={(e) => {
                       e.preventDefault();
                       handleUpdateName(p.id, editNameInput);
@@ -531,7 +551,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
                     />
                   </form>
                 ) : (
-                  <span 
+                  <span
                     onClick={() => {
                       if (isMe) {
                         setEditingNameId(p.id);
@@ -540,7 +560,8 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
                     }}
                     className={cn(
                       "text-xs font-semibold text-gray-700 truncate w-full text-center mt-1",
-                      isMe && "cursor-pointer hover:text-indigo-600 transition-colors"
+                      isMe &&
+                        "cursor-pointer hover:text-indigo-600 transition-colors",
                     )}
                     title={isMe ? "Click to edit name" : undefined}
                   >
@@ -554,7 +575,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
                     onClick={() => handleClaimParticipant(p.id)}
                     className={cn(
                       "absolute scale-0 group-hover:scale-100 transition-transform bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg z-10 hover:bg-indigo-700 whitespace-nowrap",
-                      isMe ? "-top-6 text-center" : "-top-2"
+                      isMe ? "-top-6 text-center" : "-top-2",
                     )}
                   >
                     Claim {isMe ? "My Profile" : ""}
@@ -582,20 +603,29 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
             Array.from({ length: 8 - participants.length }).map((_, i) => (
               <button
                 key={`empty-${i}`}
-                onClick={() => i === 0 ? setIsAddingGuestOpen(true) : undefined}
+                onClick={() =>
+                  i === 0 ? setIsAddingGuestOpen(true) : undefined
+                }
                 className={cn(
                   "flex flex-col items-center gap-1.5 transition-all text-gray-500",
-                  i === 0 ? "hover:scale-105 active:scale-95 group cursor-pointer opacity-70" : "opacity-40 cursor-default"
+                  i === 0
+                    ? "hover:scale-105 active:scale-95 group cursor-pointer opacity-70"
+                    : "opacity-40 cursor-default",
                 )}
               >
-                <div className={cn(
-                  "w-14 h-14 rounded-2xl flex items-center justify-center bg-gray-50 border border-gray-200 border-dashed transition-all",
-                  i === 0 && "group-hover:border-indigo-400 group-hover:bg-indigo-50 group-hover:text-indigo-600"
-                )}>
+                <div
+                  className={cn(
+                    "w-14 h-14 rounded-2xl flex items-center justify-center bg-gray-50 border border-gray-200 border-dashed transition-all",
+                    i === 0 &&
+                      "group-hover:border-indigo-400 group-hover:bg-indigo-50 group-hover:text-indigo-600",
+                  )}
+                >
                   <Users className="w-6 h-6" />
                 </div>
                 {i === 0 ? (
-                  <span className="text-[10px] font-bold mt-1 tracking-tight truncate">ADD FRIEND</span>
+                  <span className="text-[10px] font-bold mt-1 tracking-tight truncate">
+                    ADD FRIEND
+                  </span>
                 ) : null}
               </button>
             ))}
@@ -666,17 +696,17 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
         </div>
       </div>
 
-        {/* Add Guest Modal */}
-        {sessionId && (
-          <AddGuestModal
-            sessionId={sessionId}
-            isOpen={isAddingGuestOpen}
-            onClose={() => setIsAddingGuestOpen(false)}
-            onGuestAdded={() => {
-              fetchParticipants(sessionId);
-            }}
-          />
-        )}
-      </main>
-    );
-  }
+      {/* Add Guest Modal */}
+      {sessionId && (
+        <AddGuestModal
+          sessionId={sessionId}
+          isOpen={isAddingGuestOpen}
+          onClose={() => setIsAddingGuestOpen(false)}
+          onGuestAdded={() => {
+            fetchParticipants(sessionId);
+          }}
+        />
+      )}
+    </main>
+  );
+}

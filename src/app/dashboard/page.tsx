@@ -36,7 +36,9 @@ export default function DashboardPage() {
         const supabase = createClient();
 
         // Get authenticated user
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
         // Get guest participant IDs from localStorage
         const localParticipantIds: string[] = [];
@@ -53,11 +55,15 @@ export default function DashboardPage() {
         // Fetch participant records from Supabase
         let query = supabase
           .from("participants")
-          .select("id, display_name, avatar_icon, avatar_color, joined_at, user_id, sessions (id, room_code, created_at, base_currency)");
+          .select(
+            "id, display_name, avatar_icon, avatar_color, joined_at, user_id, sessions (id, room_code, created_at, base_currency)",
+          );
 
         if (user) {
           if (localParticipantIds.length > 0) {
-            query = query.or(`user_id.eq.${user.id},id.in.(${localParticipantIds.join(",")})`);
+            query = query.or(
+              `user_id.eq.${user.id},id.in.(${localParticipantIds.join(",")})`,
+            );
           } else {
             query = query.eq("user_id", user.id);
           }
@@ -86,11 +92,16 @@ export default function DashboardPage() {
               avatarIcon: p.avatar_icon,
               avatarColor: p.avatar_color,
               joinedAt: p.joined_at,
-              session: (Array.isArray(p.sessions) ? p.sessions[0] : p.sessions) as SessionInfo, // Next.js supabase type workaround
+              session: (Array.isArray(p.sessions)
+                ? p.sessions[0]
+                : p.sessions) as SessionInfo, // Next.js supabase type workaround
             }));
 
           // Sort by joined_at descending
-          validRooms.sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime());
+          validRooms.sort(
+            (a, b) =>
+              new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime(),
+          );
 
           // Deduplicate rooms safely (in case auth user + local storage point to same participant)
           const uniqueRoomsMap = new Map<string, JoinedRoom>();
@@ -104,7 +115,9 @@ export default function DashboardPage() {
         }
       } catch (err) {
         console.error("Failed to load dashboard:", err);
-        setError(err instanceof Error ? err.message : "Failed to load dashboard");
+        setError(
+          err instanceof Error ? err.message : "Failed to load dashboard",
+        );
       } finally {
         setLoading(false);
       }
@@ -123,7 +136,9 @@ export default function DashboardPage() {
           </p>
         </div>
         <Link href="/">
-          <button className="px-4 py-2 border rounded-md hover:bg-neutral-100 transition-colors">Create / Join New Room</button>
+          <button className="px-4 py-2 border rounded-md hover:bg-neutral-100 transition-colors">
+            Create / Join New Room
+          </button>
         </Link>
       </div>
 
@@ -148,7 +163,9 @@ export default function DashboardPage() {
             You haven&apos;t joined any active rooms yet on this device.
           </p>
           <Link href="/">
-            <button className="px-4 py-2 bg-neutral-900 text-white rounded-md hover:bg-neutral-800 transition-colors">Get Started</button>
+            <button className="px-4 py-2 bg-neutral-900 text-white rounded-md hover:bg-neutral-800 transition-colors">
+              Get Started
+            </button>
           </Link>
         </div>
       ) : (
@@ -171,9 +188,12 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <UserCircle2 className="w-4 h-4" />
-                  Joined as <span className="font-semibold text-foreground">{room.displayName}</span>
+                  Joined as{" "}
+                  <span className="font-semibold text-foreground">
+                    {room.displayName}
+                  </span>
                 </div>
-                
+
                 <div className="text-xs text-muted-foreground">
                   Joined on {format(new Date(room.joinedAt), "PP")}
                 </div>

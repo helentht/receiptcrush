@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
           });
         },
       },
-    }
+    },
   );
 
   // This will refresh session if expired - required for Server Components

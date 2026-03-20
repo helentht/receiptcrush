@@ -1,7 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { X, Smile, Cat, Dog, Zap, Star, Heart, Rocket, User, Loader2 } from "lucide-react";
+import {
+  X,
+  Smile,
+  Cat,
+  Dog,
+  Zap,
+  Star,
+  Heart,
+  Rocket,
+  User,
+  Loader2,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const AVATARS = {
@@ -53,15 +64,13 @@ export function AddGuestModal({
 
     setIsSubmitting(true);
 
-    const { error } = await supabase
-      .from("participants")
-      .insert({
-        session_id: sessionId,
-        display_name: name.trim(),
-        avatar_icon: selectedAvatar,
-        avatar_color: selectedColor,
-        // user_id implicitly null to make it a guest
-      });
+    const { error } = await supabase.from("participants").insert({
+      session_id: sessionId,
+      display_name: name.trim(),
+      avatar_icon: selectedAvatar,
+      avatar_color: selectedColor,
+      // user_id implicitly null to make it a guest
+    });
 
     setIsSubmitting(false);
 
@@ -77,12 +86,12 @@ export function AddGuestModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
       <div className="relative bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        <button 
+        <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
         >
@@ -95,7 +104,9 @@ export function AddGuestModal({
 
         <form onSubmit={handleAddGuest} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-sm font-bold text-gray-700">Display Name</label>
+            <label className="text-sm font-bold text-gray-700">
+              Display Name
+            </label>
             <input
               type="text"
               required
@@ -108,29 +119,33 @@ export function AddGuestModal({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-gray-700">Choose Avatar</label>
+            <label className="text-sm font-bold text-gray-700">
+              Choose Avatar
+            </label>
             <div className="grid grid-cols-4 gap-2">
-              {(Object.entries(AVATARS) as [AvatarKey, React.ElementType][]).map(
-                ([key, Icon]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setSelectedAvatar(key)}
-                    className={`p-3 rounded-xl flex items-center justify-center transition-all ${
-                      selectedAvatar === key
-                        ? "bg-indigo-50 text-indigo-600 border-2 border-indigo-500 scale-105"
-                        : "bg-gray-50 text-gray-400 border-2 border-transparent hover:bg-gray-100 hover:text-gray-600"
-                    }`}
-                  >
-                    <Icon className="w-6 h-6" />
-                  </button>
-                )
-              )}
+              {(
+                Object.entries(AVATARS) as [AvatarKey, React.ElementType][]
+              ).map(([key, Icon]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSelectedAvatar(key)}
+                  className={`p-3 rounded-xl flex items-center justify-center transition-all ${
+                    selectedAvatar === key
+                      ? "bg-indigo-50 text-indigo-600 border-2 border-indigo-500 scale-105"
+                      : "bg-gray-50 text-gray-400 border-2 border-transparent hover:bg-gray-100 hover:text-gray-600"
+                  }`}
+                >
+                  <Icon className="w-6 h-6" />
+                </button>
+              ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-gray-700">Choose Color</label>
+            <label className="text-sm font-bold text-gray-700">
+              Choose Color
+            </label>
             <div className="grid grid-cols-4 gap-2">
               {COLORS.map((color) => (
                 <button

@@ -11,22 +11,22 @@ function LoginForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  
+
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextRoute = searchParams.get('next') || '';
+  const nextRoute = searchParams.get("next") || "";
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
-    
+
     setIsEmailLoading(true);
     setError("");
     setMessage("");
 
     const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
-    if (nextRoute) callbackUrl.searchParams.set('next', nextRoute);
+    if (nextRoute) callbackUrl.searchParams.set("next", nextRoute);
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -46,10 +46,10 @@ function LoginForm() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     setError("");
-    
+
     const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
-    if (nextRoute) callbackUrl.searchParams.set('next', nextRoute);
-    
+    if (nextRoute) callbackUrl.searchParams.set("next", nextRoute);
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -68,7 +68,9 @@ function LoginForm() {
     <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-        <p className="text-gray-500 font-medium">Log in to save your split rooms and claim your avatar across devices.</p>
+        <p className="text-gray-500 font-medium">
+          Log in to save your split rooms and claim your avatar across devices.
+        </p>
       </div>
 
       {error && (
@@ -118,13 +120,18 @@ function LoginForm() {
 
         <div className="relative flex items-center py-2">
           <div className="flex-grow border-t border-gray-200"></div>
-          <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">or</span>
+          <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">
+            or
+          </span>
           <div className="flex-grow border-t border-gray-200"></div>
         </div>
 
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label
+              htmlFor="email"
+              className="block text-sm font-semibold text-gray-700 mb-1.5"
+            >
               Email Address
             </label>
             <input
@@ -137,7 +144,7 @@ function LoginForm() {
               className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all text-gray-900 outline-none"
             />
           </div>
-          
+
           <button
             type="submit"
             disabled={isEmailLoading || isGoogleLoading || !email.trim()}
@@ -153,10 +160,10 @@ function LoginForm() {
             )}
           </button>
         </form>
-        
+
         <button
           type="button"
-          onClick={() => router.push('/')}
+          onClick={() => router.push("/")}
           className="w-full text-center text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors mt-4"
         >
           ← Back to Home
@@ -169,7 +176,11 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="flex-1 bg-gray-50 flex flex-col items-center justify-center p-4">
-      <Suspense fallback={<Loader2 className="w-10 h-10 animate-spin text-indigo-600" />}>
+      <Suspense
+        fallback={
+          <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
+        }
+      >
         <LoginForm />
       </Suspense>
     </main>
