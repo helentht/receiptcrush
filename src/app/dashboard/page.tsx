@@ -101,9 +101,9 @@ export default function DashboardPage() {
 
           setRooms(Array.from(uniqueRoomsMap.values()));
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error("Failed to load dashboard:", err);
-        setError(err.message || "Failed to load dashboard");
+        setError(err instanceof Error ? err.message : "Failed to load dashboard");
       } finally {
         setLoading(false);
       }
@@ -144,7 +144,7 @@ export default function DashboardPage() {
           </div>
           <h2 className="text-xl font-semibold mb-2">No rooms found</h2>
           <p className="text-muted-foreground mb-6">
-            You haven't joined any active rooms yet on this device.
+            You haven&apos;t joined any active rooms yet on this device.
           </p>
           <Link href="/">
             <Button>Get Started</Button>
