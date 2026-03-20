@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
       const prompt = `You are a helpful receipt-parsing assistant. Examine this receipt image.
 Identify all the purchased line items. Ignore subtotal, tax, tip, and total. 
-CRITICAL RULE FOR PRICES: Always extract the TOTAL price for each line item, NOT the unit price. If a row indicates multiple quantities (for example: "2 x 2530 = 5060" or "Tendon 2点 5060"), you MUST return the combined line total (e.g. 5060), and do NOT return the unit price (e.g. 2530). Include the quantity in the item_name (e.g. "Tendon (x2)").
+CRITICAL RULE FOR QUANTITIES: If a row indicates multiple quantities of the same item (for example: "2 x 2530 = 5060" or "Tendon 2点 5060"), you MUST split them into separate individual items in the JSON array. For example, if there are 2 Tendons, create 2 separate JSON objects for "Tendon", each with a price of 2530. DO NOT group them into a single item with a combined total. This is strictly required so that different people can claim individual portions of a shared order.
 Detect the currency of the receipt (e.g., "USD", "HKD", "JPY", "EUR"). Be extremely careful with the "$" sign: look for contextual clues like address, store name (e.g. Hong Kong stores), or explicit "HK$" or "HKD" indicators to correctly distinguish HKD from USD. DO NOT convert the prices yourself, extract the exact prices written on the receipt.
 Also, search the receipt for the printed date of the transaction and format it as "YYYY-MM-DD" (e.g., "2024-03-15").
 
@@ -58,8 +58,12 @@ Return ONLY a valid JSON object with the following structure:
   "date": "2024-03-15",
   "items": [
     {
-      "item_name": "Exact description (clean up abbreviations if needed, include qty if > 1)",
-      "price": 5060
+      "item_name": "Tendon (1 of 2)",
+      "price": 2530
+    },
+    {
+      "item_name": "Tendon (2 of 2)",
+      "price": 2530
     }
   ]
 }
