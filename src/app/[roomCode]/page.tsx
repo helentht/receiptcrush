@@ -168,7 +168,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
   const handleChangeCurrency = async (newCurrency: string) => {
     if (newCurrency === roomCurrency || !sessionId) return;
     const confirmChange = window.confirm(
-      `Are you sure you want to change the room currency to ${newCurrency}? Past receipts will be recalculated using historical exchange rates.`
+      `Are you sure you want to change the room currency to ${newCurrency}? Past receipts will be recalculated using historical exchange rates.`,
     );
     if (!confirmChange) return;
 

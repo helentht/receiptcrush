@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
       const prompt = `You are a helpful receipt-parsing assistant. Examine this receipt image.
 Identify all the purchased line items. Ignore subtotal, tax, tip, and total. 
-Detect the currency of the receipt (e.g., "USD", "JPY", "EUR"). DO NOT convert the prices yourself, extract the exact prices written on the receipt.
+Detect the currency of the receipt (e.g., "USD", "HKD", "JPY", "EUR"). Be extremely careful with the "$" sign: look for contextual clues like address, store name (e.g. Hong Kong stores), or explicit "HK$" or "HKD" indicators to correctly distinguish HKD from USD. DO NOT convert the prices yourself, extract the exact prices written on the receipt.
 Also, search the receipt for the printed date of the transaction and format it as "YYYY-MM-DD" (e.g., "2024-03-15").
 
 Return ONLY a valid JSON object with the following structure:

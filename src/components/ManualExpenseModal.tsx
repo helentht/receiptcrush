@@ -13,7 +13,17 @@ interface Props {
   onSuccess: () => void;
 }
 
-const COMMON_CURRENCIES = ["USD", "EUR", "GBP", "JPY", "HKD", "SGD", "TWD", "AUD", "CAD"];
+const COMMON_CURRENCIES = [
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "HKD",
+  "SGD",
+  "TWD",
+  "AUD",
+  "CAD",
+];
 
 export function ManualExpenseModal({
   sessionId,
@@ -48,7 +58,9 @@ export function ManualExpenseModal({
 
       if (targetCurrency !== baseRoomCurrency) {
         try {
-          const rateRes = await fetch(`https://open.er-api.com/v6/latest/${targetCurrency}`);
+          const rateRes = await fetch(
+            `https://open.er-api.com/v6/latest/${targetCurrency}`,
+          );
           const rateData = await rateRes.json();
           if (rateData && rateData.rates && rateData.rates[baseRoomCurrency]) {
             exchangeRate = rateData.rates[baseRoomCurrency];
@@ -56,7 +68,10 @@ export function ManualExpenseModal({
             console.warn("Failed to get exchange rate, defaulting to 1");
           }
         } catch (e) {
-          console.warn("API request for exchange rate failed, defaulting to 1", e);
+          console.warn(
+            "API request for exchange rate failed, defaulting to 1",
+            e,
+          );
         }
       }
 
@@ -149,7 +164,9 @@ export function ManualExpenseModal({
                   <option value={roomCurrency}>{roomCurrency}</option>
                 )}
                 {COMMON_CURRENCIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
               <input

@@ -87,9 +87,15 @@ export function ExpenseAssignment({
   const [editingPayerReceiptId, setEditingPayerReceiptId] = useState<
     string | null
   >(null);
-  const [feeModalParams, setFeeModalParams] = useState<{ receiptId: string; fee: number } | null>(null);
-  const [priceDetailParams, setPriceDetailParams] = useState<{ item: Item; receipt: Receipt } | null>(null);
-  
+  const [feeModalParams, setFeeModalParams] = useState<{
+    receiptId: string;
+    fee: number;
+  } | null>(null);
+  const [priceDetailParams, setPriceDetailParams] = useState<{
+    item: Item;
+    receipt: Receipt;
+  } | null>(null);
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -214,10 +220,7 @@ export function ExpenseAssignment({
     }
   };
 
-  const handleChangeFee = async (
-    receiptId: string,
-    fee: number,
-  ) => {
+  const handleChangeFee = async (receiptId: string, fee: number) => {
     // Optimistic update
     setReceipts(
       receipts.map((r) =>
@@ -255,7 +258,9 @@ export function ExpenseAssignment({
                     : "",
                 )}
                 onClick={() =>
-                  receipt.image_url && receipt.image_url !== "manual_entry" && setSelectedImage(receipt.image_url)
+                  receipt.image_url &&
+                  receipt.image_url !== "manual_entry" &&
+                  setSelectedImage(receipt.image_url)
                 }
               >
                 {receipt.image_url && receipt.image_url !== "manual_entry" ? (
@@ -310,17 +315,25 @@ export function ExpenseAssignment({
                         ? "Failed to read"
                         : `${receipt.items?.length || 0} items`}
                   </span>
-                  {receipt.processing_status !== "processing" && receipt.processing_status !== "failed" && (
-                    <span className="flex items-center gap-1">
-                      <span className="text-gray-300">•</span>
-                      <button
-                        onClick={() => setFeeModalParams({ receiptId: receipt.id, fee: receipt.cc_fee_percentage || 0 })}
-                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium px-1 rounded hover:bg-indigo-50 transition-colors"
-                      >
-                        {receipt.cc_fee_percentage ? `+${receipt.cc_fee_percentage}% fee` : "+ Add fee"}
-                      </button>
-                    </span>
-                  )}
+                  {receipt.processing_status !== "processing" &&
+                    receipt.processing_status !== "failed" && (
+                      <span className="flex items-center gap-1">
+                        <span className="text-gray-300">•</span>
+                        <button
+                          onClick={() =>
+                            setFeeModalParams({
+                              receiptId: receipt.id,
+                              fee: receipt.cc_fee_percentage || 0,
+                            })
+                          }
+                          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium px-1 rounded hover:bg-indigo-50 transition-colors"
+                        >
+                          {receipt.cc_fee_percentage
+                            ? `+${receipt.cc_fee_percentage}% fee`
+                            : "+ Add fee"}
+                        </button>
+                      </span>
+                    )}
                 </p>
               </div>
             </div>
@@ -364,11 +377,15 @@ export function ExpenseAssignment({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p 
+                    <p
                       className="font-black text-indigo-700 text-lg cursor-pointer hover:text-indigo-900 transition-colors"
                       onClick={() => setPriceDetailParams({ item, receipt })}
                     >
-                      ${(item.price * (1 + (receipt.cc_fee_percentage || 0) / 100)).toFixed(2)}
+                      $
+                      {(
+                        item.price *
+                        (1 + (receipt.cc_fee_percentage || 0) / 100)
+                      ).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -429,22 +446,22 @@ export function ExpenseAssignment({
       ))}
 
       {/* Edit CC Fee Modal */}
-      <FeeModal 
-        feeModalParams={feeModalParams} 
-        setFeeModalParams={setFeeModalParams} 
-        handleChangeFee={handleChangeFee} 
+      <FeeModal
+        feeModalParams={feeModalParams}
+        setFeeModalParams={setFeeModalParams}
+        handleChangeFee={handleChangeFee}
       />
 
       {/* Price Detail Modal */}
-      <PriceDetailModal 
-        priceDetailParams={priceDetailParams} 
-        setPriceDetailParams={setPriceDetailParams} 
+      <PriceDetailModal
+        priceDetailParams={priceDetailParams}
+        setPriceDetailParams={setPriceDetailParams}
       />
 
       {/* Fullscreen Image Modal */}
-      <FullscreenImageModal 
-        selectedImage={selectedImage} 
-        setSelectedImage={setSelectedImage} 
+      <FullscreenImageModal
+        selectedImage={selectedImage}
+        setSelectedImage={setSelectedImage}
       />
     </div>
   );
