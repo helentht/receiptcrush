@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { Loader2, Receipt, ArrowRight, UserCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 type SessionInfo = {
   id: string;
@@ -33,6 +32,8 @@ export default function DashboardPage() {
       try {
         setLoading(true);
         setError(null);
+
+        const supabase = createClient();
 
         // Get authenticated user
         const { data: { user } } = await supabase.auth.getUser();
@@ -122,7 +123,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <Link href="/">
-          <Button variant="outline">Create / Join New Room</Button>
+          <button className="px-4 py-2 border rounded-md hover:bg-neutral-100 transition-colors">Create / Join New Room</button>
         </Link>
       </div>
 
@@ -147,7 +148,7 @@ export default function DashboardPage() {
             You haven&apos;t joined any active rooms yet on this device.
           </p>
           <Link href="/">
-            <Button>Get Started</Button>
+            <button className="px-4 py-2 bg-neutral-900 text-white rounded-md hover:bg-neutral-800 transition-colors">Get Started</button>
           </Link>
         </div>
       ) : (
