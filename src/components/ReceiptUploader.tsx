@@ -114,7 +114,7 @@ export function ReceiptUploader({
         ) : (
           <>
             <Camera className="w-6 h-6" />
-            Upload Receipts
+            Upload Receipts (Multi)
           </>
         )}
       </button>
