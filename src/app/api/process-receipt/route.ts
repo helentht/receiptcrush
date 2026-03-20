@@ -96,7 +96,7 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
           .replace(/```json/g, "")
           .replace(/```/g, "")
           .trim();
-          
+
         // Extract just the JSON part in case the AI added conversational text
         const jsonMatch = cleanedContent.match(/[\{|\[][\s\S]*[\}|\]]/);
         if (jsonMatch) {
@@ -116,7 +116,10 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
         }
       } catch (e) {
         console.error("Failed to parse JSON from AI", e, "\nContent:", content);
-        throw new Error("Invalid output format from AI. AI returned: " + content.substring(0, 100));
+        throw new Error(
+          "Invalid output format from AI. AI returned: " +
+            content.substring(0, 100),
+        );
       }
 
       // Automatically convert to base currency if it's different
@@ -224,12 +227,14 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
           // Multiply the original price by the exchange rate to store the equivalent in the base currency
           let numericPrice = 0;
           if (typeof item.price === "number") {
-             numericPrice = item.price;
+            numericPrice = item.price;
           } else if (typeof item.price === "string") {
-             numericPrice = parseFloat((item.price as string).replace(/[^0-9.-]+/g, ""));
+            numericPrice = parseFloat(
+              (item.price as string).replace(/[^0-9.-]+/g, ""),
+            );
           }
           if (isNaN(numericPrice)) numericPrice = 0;
-          
+
           const convertedPrice = numericPrice * exchangeRate;
 
           return {
