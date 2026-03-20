@@ -111,6 +111,30 @@ export function ExpenseAssignment({
   const supabase = createClient();
 
   useEffect(() => {
+    if (!openMenuId) return;
+    const clickHandler = () => setOpenMenuId(null);
+    const timeout = setTimeout(() => {
+      document.addEventListener("click", clickHandler);
+    }, 0);
+    return () => {
+      clearTimeout(timeout);
+      document.removeEventListener("click", clickHandler);
+    };
+  }, [openMenuId]);
+
+  useEffect(() => {
+    if (!openMenuId) return;
+    const clickHandler = () => setOpenMenuId(null);
+    const timeout = setTimeout(() => {
+      document.addEventListener("click", clickHandler);
+    }, 0);
+    return () => {
+      clearTimeout(timeout);
+      document.removeEventListener("click", clickHandler);
+    };
+  }, [openMenuId]);
+
+  useEffect(() => {
     fetchReceipts();
 
     // Subscribe to receipts and items changes (requires Supabase Realtime to be enabled on these tables)
