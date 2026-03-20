@@ -89,6 +89,8 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
     "expenses",
   );
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editNameInput, setEditNameInput] = useState("");
 
   const fetchParticipants = useCallback(
     async (sid: string) => {
@@ -275,6 +277,30 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
       alert("Failed to claim profile. Please try again.");
     }
   };
+
+    const handleUpdateName = async (participantId: string, newName: string) => {
+      const trimmedName = newName.trim();
+      setEditingNameId(null);
+      
+      if (!trimmedName || !sessionId || trimmedName === myParticipant?.display_name) return;
+
+      // Optimistically update
+      setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, display_name: trimmedName } : p));
+      if (myParticipant && myParticipant.id === participantId) {
+        setMyParticipant({ ...myParticipant, display_name: trimmedName });
+      }
+
+      const { error } = await supabase
+        .from("participants")
+        .update({ display_name: trimmedName })
+        .eq("id", participantId);
+
+      if (error) {
+        console.error("Failed to update name:", error);
+        // Refresh from server to revert optimistic update if failed
+        fetchParticipants(sessionId);
+      }
+    };
 
   // --- Rendering ---
 
@@ -486,9 +512,41 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
                 >
                   <Icon className="w-7 h-7" />
                 </div>
-                <span className="text-xs font-semibold text-gray-700 truncate w-full text-center">
-                  {p.display_name}
-                </span>
+                
+                {editingNameId === p.id && isMe ? (
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleUpdateName(p.id, editNameInput);
+                    }}
+                    className="w-full relative z-20 mt-1"
+                  >
+                    <input
+                      autoFocus
+                      type="text"
+                      className="text-xs font-semibold text-gray-900 w-full text-center border-b-2 border-indigo-500 focus:outline-none bg-transparent"
+                      value={editNameInput}
+                      onChange={(e) => setEditNameInput(e.target.value)}
+                      onBlur={() => handleUpdateName(p.id, editNameInput)}
+                    />
+                  </form>
+                ) : (
+                  <span 
+                    onClick={() => {
+                      if (isMe) {
+                        setEditingNameId(p.id);
+                        setEditNameInput(p.display_name);
+                      }
+                    }}
+                    className={cn(
+                      "text-xs font-semibold text-gray-700 truncate w-full text-center mt-1",
+                      isMe && "cursor-pointer hover:text-indigo-600 transition-colors"
+                    )}
+                    title={isMe ? "Click to edit name" : undefined}
+                  >
+                    {p.display_name}
+                  </span>
+                )}
 
                 {/* Badge/Button Logic */}
                 {isClaimable ? (

@@ -363,7 +363,8 @@ export function ExpenseAssignment({
                       <img
                         src={item.item_image_url}
                         alt={item.item_name}
-                        className="w-12 h-12 rounded-xl object-cover border border-gray-200"
+                          className="w-12 h-12 rounded-xl object-cover border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setSelectedImage(item.item_image_url)}
                       />
                     ) : (
                       <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center border border-gray-200">
