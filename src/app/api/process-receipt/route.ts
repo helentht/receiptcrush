@@ -54,16 +54,16 @@ Also, search the receipt for the printed date of the transaction and format it a
 
 Return ONLY a valid JSON object with the following structure:
 {
-  "currency": "JPY",
-  "date": "2024-03-15",
+  "currency": "<Currency Code>",
+  "date": "YYYY-MM-DD",
   "items": [
     {
-      "item_name": "Tendon (1 of 2)",
-      "price": 2530
+      "item_name": "<Exact Name of Item> (1 of <Total Quantity>)",
+      "price": 100
     },
     {
-      "item_name": "Tendon (2 of 2)",
-      "price": 2530
+      "item_name": "<Exact Name of Item> (2 of <Total Quantity>)",
+      "price": 100
     }
   ]
 }
