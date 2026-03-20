@@ -21,6 +21,7 @@ import {
   Plus,
   Edit2,
   Copy,
+  MoreVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeeModal } from "./FeeModal";
@@ -101,6 +102,7 @@ export function ExpenseAssignment({
     receipt: Receipt;
   } | null>(null);
 
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<{
     item: Item;
     receipt: Receipt;
@@ -178,13 +180,19 @@ export function ExpenseAssignment({
   };
 
   const retryRecognition = async (receiptId: string) => {
-    if (!window.confirm("Retrying will delete all current parsed items for this receipt and re-run the AI. Are you sure?"))
+    if (
+      !window.confirm(
+        "Retrying will delete all current parsed items for this receipt and re-run the AI. Are you sure?",
+      )
+    )
       return;
 
     // Optimistically show processing animation & clear items
     setReceipts((prev) =>
       prev.map((r) =>
-        r.id === receiptId ? { ...r, processing_status: "processing", items: [] } : r,
+        r.id === receiptId
+          ? { ...r, processing_status: "processing", items: [] }
+          : r,
       ),
     );
 
@@ -209,19 +217,26 @@ export function ExpenseAssignment({
         console.error("Retry failed:", result);
         alert(`Retry failed: ${result.details || result.error}`);
         // Revert status to failed in DB & UI since it errored out
-        await supabase.from("receipts").update({ processing_status: "failed" }).eq("id", receiptId);
+        await supabase
+          .from("receipts")
+          .update({ processing_status: "failed" })
+          .eq("id", receiptId);
       }
-      
+
       // Refresh UI manually just in case Realtime misses the event
       fetchReceipts();
-      
     } catch (error) {
       console.error("Error retrying AI process:", error);
       alert("Network error trying to contact AI server.");
       // Revert status on crash
-      await supabase.from("receipts").update({ processing_status: "failed" }).eq("id", receiptId);
+      await supabase
+        .from("receipts")
+        .update({ processing_status: "failed" })
+        .eq("id", receiptId);
       setReceipts((prev) =>
-        prev.map((r) => (r.id === receiptId ? { ...r, processing_status: "failed" } : r))
+        prev.map((r) =>
+          r.id === receiptId ? { ...r, processing_status: "failed" } : r,
+        ),
       );
     }
   };
@@ -483,23 +498,26 @@ export function ExpenseAssignment({
             <div className="flex items-center gap-3">
               {receipt.processing_status === "processing" && (
                 <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-              )}                {receipt.processing_status !== "processing" && (
-                  <button
-                    onClick={() => handleAddNewItem(receipt.id)}
-                    className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-colors"
-                    title="Add new item"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                )}              {receipt.processing_status !== "processing" && receipt.image_url !== "manual_entry" && (
+              )}{" "}
+              {receipt.processing_status !== "processing" && (
                 <button
-                  onClick={() => retryRecognition(receipt.id)}
-                  className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
-                  title="Retry AI scan"
+                  onClick={() => handleAddNewItem(receipt.id)}
+                  className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-colors"
+                  title="Add new item"
                 >
-                  <RefreshCw className="w-5 h-5" />
+                  <Plus className="w-5 h-5" />
                 </button>
-              )}
+              )}{" "}
+              {receipt.processing_status !== "processing" &&
+                receipt.image_url !== "manual_entry" && (
+                  <button
+                    onClick={() => retryRecognition(receipt.id)}
+                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
+                    title="Retry AI scan"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                  </button>
+                )}
               <button
                 onClick={() => deleteReceipt(receipt.id, receipt.image_url)}
                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
@@ -536,17 +554,65 @@ export function ExpenseAssignment({
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p
-                      className="font-black text-indigo-700 text-lg cursor-pointer hover:text-indigo-900 transition-colors"
-                      onClick={() => setPriceDetailParams({ item, receipt })}
+
+                  <div className="flex items-center gap-1 relative">
+                    <div className="text-right">
+                      <p
+                        className="font-black text-indigo-700 text-lg cursor-pointer hover:text-indigo-900 transition-colors"
+                        onClick={() => setPriceDetailParams({ item, receipt })}
+                      >
+                        $
+                        {(
+                          item.price *
+                          (1 + (receipt.cc_fee_percentage || 0) / 100)
+                        ).toFixed(2)}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        setOpenMenuId(openMenuId === item.id ? null : item.id)
+                      }
+                      className="p-1 text-gray-400 hover:text-gray-600 bg-gray-50 transition-colors"
+                      title="More options"
                     >
-                      $
-                      {(
-                        item.price *
-                        (1 + (receipt.cc_fee_percentage || 0) / 100)
-                      ).toFixed(2)}
-                    </p>
+                      <MoreVertical className="w-3.5 h-3.5" />
+                    </button>
+
+                    {openMenuId === item.id && (
+                      <div className="absolute right-0 top-full mt-1 z-10 flex flex-col gap-1 text-gray-400 bg-white p-1 rounded-md shadow-lg border border-gray-100">
+                        <button
+                          onClick={() => {
+                            setEditingItem({ item, receipt });
+                            setOpenMenuId(null);
+                          }}
+                          className="p-1.5 px-3 hover:text-indigo-600 hover:bg-gray-50 rounded flex items-center gap-2 transition-colors text-xs font-medium w-full text-left"
+                          title="Edit Item"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleDuplicateItem(item, receipt.id);
+                            setOpenMenuId(null);
+                          }}
+                          className="p-1.5 px-3 hover:text-green-600 hover:bg-gray-50 rounded flex items-center gap-2 transition-colors text-xs font-medium w-full text-left"
+                          title="Duplicate Item"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> Duplicate
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleDeleteItem(item.id, receipt.id);
+                            setOpenMenuId(null);
+                          }}
+                          className="p-1.5 px-3 hover:text-red-600 hover:bg-gray-50 rounded flex items-center gap-2 transition-colors text-xs font-medium w-full text-left"
+                          title="Delete Item"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -611,21 +677,21 @@ export function ExpenseAssignment({
         setFeeModalParams={setFeeModalParams}
         handleChangeFee={handleChangeFee}
       />
-      
-      <EditItemModal 
-        isOpen={!!editingItem} 
-        onClose={() => setEditingItem(null)} 
-        item={editingItem?.item || null} 
-        receipt={editingItem?.receipt || null} 
-        onSave={(name, price) => editingItem && handleSaveItemEdit(editingItem.item.id, editingItem.receipt.id, name, price)} 
-      />
-      
-      <EditItemModal 
-        isOpen={!!editingItem} 
-        onClose={() => setEditingItem(null)} 
-        item={editingItem?.item || null} 
-        receipt={editingItem?.receipt || null} 
-        onSave={(name, price) => editingItem && handleSaveItemEdit(editingItem.item.id, editingItem.receipt.id, name, price)} 
+
+      <EditItemModal
+        isOpen={!!editingItem}
+        onClose={() => setEditingItem(null)}
+        item={editingItem?.item || null}
+        receipt={editingItem?.receipt || null}
+        onSave={(name, price) =>
+          editingItem &&
+          handleSaveItemEdit(
+            editingItem.item.id,
+            editingItem.receipt.id,
+            name,
+            price,
+          )
+        }
       />
 
       {/* Price Detail Modal */}
