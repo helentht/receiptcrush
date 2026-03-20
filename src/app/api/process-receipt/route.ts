@@ -52,18 +52,14 @@ CRITICAL RULE FOR QUANTITIES: If a row indicates multiple quantities of the same
 Detect the currency of the receipt (e.g., "USD", "HKD", "JPY", "EUR"). Be extremely careful with the "$" sign: look for contextual clues like address, store name (e.g. Hong Kong stores), or explicit "HK$" or "HKD" indicators to correctly distinguish HKD from USD. DO NOT convert the prices yourself, extract the exact prices written on the receipt.
 Also, search the receipt for the printed date of the transaction and format it as "YYYY-MM-DD" (e.g., "2024-03-15").
 
-Return ONLY a valid JSON object with the following structure:
+Return ONLY a valid JSON object matching this exact schema:
 {
-  "currency": "<Currency Code>",
-  "date": "YYYY-MM-DD",
+  "currency": "STRING (e.g. 'JPY', 'USD', 'HKD')",
+  "date": "STRING (YYYY-MM-DD)",
   "items": [
     {
-      "item_name": "<Exact Name of Item> (1 of <Total Quantity>)",
-      "price": 100
-    },
-    {
-      "item_name": "<Exact Name of Item> (2 of <Total Quantity>)",
-      "price": 100
+      "item_name": "STRING (The exact name of the item. If split by quantity, append ' (1 of N)')",
+      "price": "NUMBER (The price of a single unit of this item)"
     }
   ]
 }
@@ -96,10 +92,17 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
       } = { currency: baseCurrency, items: [] };
       try {
         // Safely strip any potential markdown wrappers
-        const cleanedContent = content
+        let cleanedContent = content
           .replace(/```json/g, "")
           .replace(/```/g, "")
           .trim();
+          
+        // Extract just the JSON part in case the AI added conversational text
+        const jsonMatch = cleanedContent.match(/[\{|\[][\s\S]*[\}|\]]/);
+        if (jsonMatch) {
+          cleanedContent = jsonMatch[0];
+        }
+
         const parsed = JSON.parse(cleanedContent);
         // Handle case where AI might still return an array directly despite instructions
         if (Array.isArray(parsed)) {
@@ -113,7 +116,7 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
         }
       } catch (e) {
         console.error("Failed to parse JSON from AI", e, "\nContent:", content);
-        throw new Error("Invalid output format from AI");
+        throw new Error("Invalid output format from AI. AI returned: " + content.substring(0, 100));
       }
 
       // Automatically convert to base currency if it's different
@@ -219,7 +222,15 @@ Output strictly just the JSON object. No markdown formatting block, no other tex
           }
 
           // Multiply the original price by the exchange rate to store the equivalent in the base currency
-          const convertedPrice = item.price * exchangeRate;
+          let numericPrice = 0;
+          if (typeof item.price === "number") {
+             numericPrice = item.price;
+          } else if (typeof item.price === "string") {
+             numericPrice = parseFloat((item.price as string).replace(/[^0-9.-]+/g, ""));
+          }
+          if (isNaN(numericPrice)) numericPrice = 0;
+          
+          const convertedPrice = numericPrice * exchangeRate;
 
           return {
             receipt_id: receiptId,

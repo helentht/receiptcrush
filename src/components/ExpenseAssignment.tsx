@@ -190,13 +190,19 @@ export function ExpenseAssignment({
 
     try {
       // Re-trigger the edge-function route
-      await fetch("/api/process-receipt", {
+      const response = await fetch("/api/process-receipt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ receiptId }),
       });
+      const result = await response.json();
+      if (!response.ok) {
+        console.error("Retry failed:", result);
+        alert(`Retry failed: ${result.details || result.error}`);
+      }
     } catch (error) {
       console.error("Error retrying AI process:", error);
+      alert("Network error trying to contact AI server.");
     }
   };
 
