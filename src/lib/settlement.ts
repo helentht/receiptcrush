@@ -36,8 +36,11 @@ export function calculateSettlements(
   items: Item[],
   receipts: Receipt[],
   participants: Participant[],
-  completedSettlements: SettlementRecord[] = []
-): { calculatedSettlements: CalculatedSettlement[]; userBalances: Record<string, number> } {
+  completedSettlements: SettlementRecord[] = [],
+): {
+  calculatedSettlements: CalculatedSettlement[];
+  userBalances: Record<string, number>;
+} {
   // Calculate initial balances: total paid - total owed
   const userBalances: Record<string, number> = {};
   participants.forEach((p) => {
@@ -55,7 +58,10 @@ export function calculateSettlements(
     const feeMultiplier = 1 + (receipt.cc_fee_percentage || 0) / 100;
     const actualPrice = item.price * feeMultiplier;
 
-    if (receipt.uploader_id && userBalances[receipt.uploader_id] !== undefined) {
+    if (
+      receipt.uploader_id &&
+      userBalances[receipt.uploader_id] !== undefined
+    ) {
       userBalances[receipt.uploader_id] += actualPrice;
     }
 
@@ -67,7 +73,10 @@ export function calculateSettlements(
         }
       });
     } else {
-      if (receipt.uploader_id && userBalances[receipt.uploader_id] !== undefined) {
+      if (
+        receipt.uploader_id &&
+        userBalances[receipt.uploader_id] !== undefined
+      ) {
         userBalances[receipt.uploader_id] -= actualPrice;
       }
     }

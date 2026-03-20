@@ -99,7 +99,7 @@ export function SettlementSummary({
         itemsData as Item[],
         receiptsData as Receipt[],
         participants,
-        (settlementsData || []) as SettlementRecord[]
+        (settlementsData || []) as SettlementRecord[],
       );
 
       setSettlements(calculatedSettlements);

@@ -235,7 +235,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex-1 h-full bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
       </div>
     );
@@ -244,7 +244,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
   // View 1: Participant Join Form
   if (!isJoined) {
     return (
-      <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <main className="flex-1 h-full bg-gray-50 flex flex-col items-center justify-center p-4">
         <div className="max-w-md w-full bg-white p-6 sm:p-8 rounded-3xl shadow-xl border border-gray-100">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gray-900">
@@ -359,7 +359,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
 
   // View 2: The Action Lobby
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col p-4 max-w-md mx-auto relative pt-12 pb-48">
+    <main className="flex-1 h-full bg-gray-50 flex flex-col p-4 max-w-md mx-auto relative pt-12 pb-48">
       {/* Header */}
       <div className="text-center space-y-4 mb-8">
         <div className="flex justify-between items-center mb-4">

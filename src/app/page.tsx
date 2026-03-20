@@ -95,7 +95,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+    <main className="flex-1 bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
         {/* Header / Logo */}
         <div className="text-center space-y-2">

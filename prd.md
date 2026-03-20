@@ -589,16 +589,18 @@ _(Table 7: Product Risk Assessment)_
 
 ## V2 Roadmap: User Authentication & Room Management
 
-*Status: In Planning*
+_Status: In Planning_
 
 As the application moves past its MVP phase ("zero-login" approach), the following features will be introduced to enhance security, persistence, and user control.
 
 ### 1. User Authentication
+
 - Support for persistent user accounts.
 - Integration with Supabase Auth for **Google Login** and **Email Login**.
 - Participants link their sessions/data to a unified user profile.
 
 ### 2. User Dashboard
+
 - A dedicated `/dashboard` UI for authenticated users.
 - Displays a consolidated view of:
   - **Rooms Hosted:** Sessions the user has created.
@@ -606,6 +608,7 @@ As the application moves past its MVP phase ("zero-login" approach), the followi
 - Easy access to "Create New Room" directly from the dashboard.
 
 ### 3. Room Host Approval Workflow
+
 - When a new user navigates to a room link, they must log in.
 - Instead of auto-joining, the user is placed into a `pending` state.
 - **Creator Controls:** The room creator has administrative rights.
