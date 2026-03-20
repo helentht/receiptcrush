@@ -439,6 +439,7 @@ _(Table 5: Recommended Technology Stack)_
 - Online image search for parsed item thumbnails
 - Equal split for shared items (no custom percentages)
 - Manual assignment interface (full receipt thumbnail + item list)
+- In-place receipt item management with polished native-feel UI (edit details, duplicate, delete)
 - Debt simplification algorithm
 - Mobile-responsive web interface
 - 30-day session persistence
@@ -450,7 +451,6 @@ _(Table 5: Recommended Technology Stack)_
 - Custom split percentages (e.g., 60/40 split)
 - Tax and tip allocation customization
 - Payment integration (Venmo, PayPal, etc.)
-- Receipt editing interface for AI errors
 - Mobile native apps (iOS, Android)
 - Export to CSV/PDF
 - Analytics dashboard for organizers
@@ -460,7 +460,6 @@ _(Table 5: Recommended Technology Stack)_
 **Version 1.1: Enhanced Parsing**
 
 - Bounding box detection for item-level image cropping
-- Receipt editing interface to correct AI mistakes
 - Support for handwritten receipts
 
 **Version 1.2: Advanced Features**
@@ -560,10 +559,11 @@ _(Table 7: Product Risk Assessment)_
 - Real time visual updates on remaining user balances
 - Settlement history log integration
 
-**Phase 5: Polish & Launch (Day 10) - In Progress**
+**Phase 5: Polish & Launch (Day 10) - Completed**
 
 - UX polish: receipt image popups, expanded settlement details
-- Error handling and loading states
+- Advanced receipt item management (edit, duplicate, delete) using a fluid tap-to-open context menu and outside-click dismissal
+- Robust API error handling and automated retry integrations
 - Mobile responsiveness refinement
 - User testing with real receipts
 - Bug fixes and performance optimization
