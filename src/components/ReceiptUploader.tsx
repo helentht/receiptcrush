@@ -95,8 +95,8 @@ export function ReceiptUploader({
     <div className="w-full">
       <input
         type="file"
-        accept="image/*"
-        multiple
+        accept="image/jpeg, image/png, image/heic, image/webp, image/*"
+        multiple={true}
         className="hidden"
         ref={fileInputRef}
         onChange={handleFileChange}
