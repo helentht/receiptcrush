@@ -176,10 +176,17 @@ export function SettlementSummary({
 
   return (
     <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm mb-6 w-full">
-      <h2 className="font-bold text-gray-900 mb-6 flex items-center gap-2 text-lg">
-        <DollarSign className="w-5 h-5 text-indigo-600" />
-        Settlement Plan
-      </h2>
+<div className="mb-6">
+          <h2 className="font-bold text-gray-900 flex items-center gap-2 text-lg">
+            <DollarSign className="w-5 h-5 text-indigo-600" />
+            Settlement Plan
+          </h2>
+          {settlements.length > 0 && (
+            <p className="text-sm text-gray-500 mt-1 ml-7">
+              Tap on any settlement card to view the exact items to be paid.
+            </p>
+          )}
+        </div>
 
       {settlements.length === 0 ? (
         <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-2xl">

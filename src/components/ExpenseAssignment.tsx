@@ -18,11 +18,15 @@ import {
   Rocket,
   ChevronDown,
   FileText,
+  Plus,
+  Edit2,
+  Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeeModal } from "./FeeModal";
 import { PriceDetailModal } from "./PriceDetailModal";
 import { FullscreenImageModal } from "./FullscreenImageModal";
+import { EditItemModal } from "./EditItemModal";
 
 // Types
 export interface Participant {
@@ -93,6 +97,11 @@ export function ExpenseAssignment({
     fee: number;
   } | null>(null);
   const [priceDetailParams, setPriceDetailParams] = useState<{
+    item: Item;
+    receipt: Receipt;
+  } | null>(null);
+
+  const [editingItem, setEditingItem] = useState<{
     item: Item;
     receipt: Receipt;
   } | null>(null);
@@ -215,6 +224,90 @@ export function ExpenseAssignment({
         prev.map((r) => (r.id === receiptId ? { ...r, processing_status: "failed" } : r))
       );
     }
+  };
+
+  const handleAddNewItem = async (receiptId: string) => {
+    const newItem = {
+      receipt_id: receiptId,
+      item_name: "New Item",
+      item_image_url: "",
+      price: 0,
+      assigned_to: [],
+    };
+
+    const { data } = await supabase
+      .from("items")
+      .insert([newItem])
+      .select()
+      .single();
+    if (data) {
+      setReceipts((prev) =>
+        prev.map((r) =>
+          r.id === receiptId ? { ...r, items: [...r.items, data] } : r,
+        ),
+      );
+    }
+  };
+
+  const handleDuplicateItem = async (item: Item, receiptId: string) => {
+    const duplicatedItem = {
+      receipt_id: receiptId,
+      item_name: item.item_name + " (Copy)",
+      item_image_url: item.item_image_url,
+      price: item.price,
+      assigned_to: [],
+    };
+
+    const { data } = await supabase
+      .from("items")
+      .insert([duplicatedItem])
+      .select()
+      .single();
+    if (data) {
+      setReceipts((prev) =>
+        prev.map((r) =>
+          r.id === receiptId ? { ...r, items: [...r.items, data] } : r,
+        ),
+      );
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string, receiptId: string) => {
+    if (!window.confirm("Delete this item?")) return;
+    setReceipts((prev) =>
+      prev.map((r) =>
+        r.id === receiptId
+          ? { ...r, items: r.items.filter((i) => i.id !== itemId) }
+          : r,
+      ),
+    );
+    await supabase.from("items").delete().eq("id", itemId);
+  };
+
+  const handleSaveItemEdit = async (
+    itemId: string,
+    receiptId: string,
+    newName: string,
+    newPrice: number,
+  ) => {
+    setReceipts((prev) =>
+      prev.map((r) =>
+        r.id === receiptId
+          ? {
+              ...r,
+              items: r.items.map((i) =>
+                i.id === itemId
+                  ? { ...i, item_name: newName, price: newPrice }
+                  : i,
+              ),
+            }
+          : r,
+      ),
+    );
+    await supabase
+      .from("items")
+      .update({ item_name: newName, price: newPrice })
+      .eq("id", itemId);
   };
 
   const toggleAssignment = async (
@@ -390,8 +483,15 @@ export function ExpenseAssignment({
             <div className="flex items-center gap-3">
               {receipt.processing_status === "processing" && (
                 <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-              )}
-              {receipt.processing_status !== "processing" && receipt.image_url !== "manual_entry" && (
+              )}                {receipt.processing_status !== "processing" && (
+                  <button
+                    onClick={() => handleAddNewItem(receipt.id)}
+                    className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-colors"
+                    title="Add new item"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                )}              {receipt.processing_status !== "processing" && receipt.image_url !== "manual_entry" && (
                 <button
                   onClick={() => retryRecognition(receipt.id)}
                   className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
@@ -510,6 +610,22 @@ export function ExpenseAssignment({
         feeModalParams={feeModalParams}
         setFeeModalParams={setFeeModalParams}
         handleChangeFee={handleChangeFee}
+      />
+      
+      <EditItemModal 
+        isOpen={!!editingItem} 
+        onClose={() => setEditingItem(null)} 
+        item={editingItem?.item || null} 
+        receipt={editingItem?.receipt || null} 
+        onSave={(name, price) => editingItem && handleSaveItemEdit(editingItem.item.id, editingItem.receipt.id, name, price)} 
+      />
+      
+      <EditItemModal 
+        isOpen={!!editingItem} 
+        onClose={() => setEditingItem(null)} 
+        item={editingItem?.item || null} 
+        receipt={editingItem?.receipt || null} 
+        onSave={(name, price) => editingItem && handleSaveItemEdit(editingItem.item.id, editingItem.receipt.id, name, price)} 
       />
 
       {/* Price Detail Modal */}
