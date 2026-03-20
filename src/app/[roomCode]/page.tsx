@@ -633,8 +633,8 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
         ? sessionId &&
           myParticipant && (
             <ExpenseAssignment
-              sessionId={sessionId}
               participants={participants}
+              sessionId={sessionId}
               myParticipantId={myParticipant.id}
               refreshTrigger={refreshTrigger}
             />
@@ -642,8 +642,8 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
         : sessionId &&
           myParticipant && (
             <SettlementSummary
-              sessionId={sessionId}
               participants={participants}
+              sessionId={sessionId}
               myParticipantId={myParticipant.id}
               refreshTrigger={refreshTrigger}
             />
