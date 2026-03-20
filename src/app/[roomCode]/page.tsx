@@ -22,6 +22,7 @@ import {
 import { ReceiptUploader } from "@/components/ReceiptUploader";
 import { ExpenseAssignment } from "@/components/ExpenseAssignment";
 import { SettlementSummary } from "@/components/SettlementSummary";
+import { AddGuestModal } from "@/components/AddGuestModal";
 
 // --- Config Data ---
 const AVATARS = {
@@ -83,6 +84,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
 
   // UI State
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isAddingGuestOpen, setIsAddingGuestOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"expenses" | "settlement">(
     "expenses",
   );
@@ -489,18 +491,23 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
                 </span>
 
                 {/* Badge/Button Logic */}
-                {isMe ? (
-                  <span className="absolute -top-2 -right-1 z-10 text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full font-bold shadow-sm">
-                    ME
-                  </span>
-                ) : isClaimable ? (
+                {isClaimable ? (
                   <button
                     onClick={() => handleClaimParticipant(p.id)}
-                    className="absolute -top-2 scale-0 group-hover:scale-100 transition-transform bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg z-10 hover:bg-indigo-700 whitespace-nowrap"
+                    className={cn(
+                      "absolute scale-0 group-hover:scale-100 transition-transform bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg z-10 hover:bg-indigo-700 whitespace-nowrap",
+                      isMe ? "-top-6 text-center" : "-top-2"
+                    )}
                   >
-                    Claim
+                    Claim {isMe ? "My Profile" : ""}
                   </button>
                 ) : null}
+
+                {isMe && (
+                  <span className="absolute -top-2 -right-1 z-10 text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full font-bold shadow-sm pointer-events-none">
+                    ME
+                  </span>
+                )}
 
                 {/* Verified authenticated user badge */}
                 {isClaimed && !isMe && (
@@ -515,14 +522,24 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
           {/* Empty placeholders to suggest more people can join */}
           {participants.length < 8 &&
             Array.from({ length: 8 - participants.length }).map((_, i) => (
-              <div
+              <button
                 key={`empty-${i}`}
-                className="flex flex-col items-center gap-1.5 opacity-40"
+                onClick={() => i === 0 ? setIsAddingGuestOpen(true) : undefined}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 transition-all text-gray-500",
+                  i === 0 ? "hover:scale-105 active:scale-95 group cursor-pointer opacity-70" : "opacity-40 cursor-default"
+                )}
               >
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-gray-100 border border-gray-200 border-dashed">
-                  <User className="w-6 h-6 text-gray-300" />
+                <div className={cn(
+                  "w-14 h-14 rounded-2xl flex items-center justify-center bg-gray-50 border border-gray-200 border-dashed transition-all",
+                  i === 0 && "group-hover:border-indigo-400 group-hover:bg-indigo-50 group-hover:text-indigo-600"
+                )}>
+                  <Users className="w-6 h-6" />
                 </div>
-              </div>
+                {i === 0 ? (
+                  <span className="text-[10px] font-bold mt-1 tracking-tight truncate">ADD FRIEND</span>
+                ) : null}
+              </button>
             ))}
         </div>
       </div>
@@ -590,6 +607,18 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
           )}
         </div>
       </div>
-    </main>
-  );
-}
+
+        {/* Add Guest Modal */}
+        {sessionId && (
+          <AddGuestModal
+            sessionId={sessionId}
+            isOpen={isAddingGuestOpen}
+            onClose={() => setIsAddingGuestOpen(false)}
+            onGuestAdded={() => {
+              fetchParticipants(sessionId);
+            }}
+          />
+        )}
+      </main>
+    );
+  }
