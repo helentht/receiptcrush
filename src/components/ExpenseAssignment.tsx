@@ -199,10 +199,21 @@ export function ExpenseAssignment({
       if (!response.ok) {
         console.error("Retry failed:", result);
         alert(`Retry failed: ${result.details || result.error}`);
+        // Revert status to failed in DB & UI since it errored out
+        await supabase.from("receipts").update({ processing_status: "failed" }).eq("id", receiptId);
       }
+      
+      // Refresh UI manually just in case Realtime misses the event
+      fetchReceipts();
+      
     } catch (error) {
       console.error("Error retrying AI process:", error);
       alert("Network error trying to contact AI server.");
+      // Revert status on crash
+      await supabase.from("receipts").update({ processing_status: "failed" }).eq("id", receiptId);
+      setReceipts((prev) =>
+        prev.map((r) => (r.id === receiptId ? { ...r, processing_status: "failed" } : r))
+      );
     }
   };
 
