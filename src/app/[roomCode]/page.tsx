@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { type User as AuthUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import {
@@ -53,6 +54,7 @@ type Participant = {
   display_name: string;
   avatar_icon: string;
   avatar_color: string;
+  user_id?: string | null;
 };
 
 export default function RoomPage({ params }: { params: { roomCode: string } }) {
@@ -68,6 +70,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
   const [isChangingCurrency, setIsChangingCurrency] = useState(false);
 
   // User State
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isJoined, setIsJoined] = useState(false);
   const [myParticipant, setMyParticipant] = useState<Participant | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -94,6 +97,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
         .order("joined_at", { ascending: true });
 
       if (data) setParticipants(data);
+      return data;
     },
     [supabase],
   );
@@ -103,6 +107,10 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
     let channel: ReturnType<typeof supabase.channel>;
 
     const init = async () => {
+      // 0. Get Auth User
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUser(user);
+
       // 1. Validate Session
       const { data: sessionData, error: sessionError } = await supabase
         .from("sessions")
@@ -119,7 +127,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
       setRoomCurrency(sessionData.base_currency || "USD");
 
       // 2. Fetch Initial Participants
-      await fetchParticipants(sessionData.id);
+      const sessionParticipants = await fetchParticipants(sessionData.id);
 
       // 3. Setup Realtime Subscription
       channel = supabase
@@ -136,23 +144,26 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
         )
         .subscribe();
 
-      // 4. Check LocalStorage for persistence
-      const savedUserId = localStorage.getItem(`receiptcrush_user_${roomCode}`);
-      if (savedUserId) {
-        // Find if this user actually exists in the DB still
-        const { data: userData } = await supabase
-          .from("participants")
-          .select("*")
-          .eq("id", savedUserId)
-          .single();
+      // 4. Check Identity (Auth first, then LocalStorage fallback)
+      let matchedParticipant = null;
 
-        if (userData) {
-          setMyParticipant(userData);
-          setIsJoined(true);
-        } else {
-          // Clean up dead local storage
-          localStorage.removeItem(`receiptcrush_user_${roomCode}`);
+      if (user && sessionParticipants) {
+        matchedParticipant = sessionParticipants.find((p) => p.user_id === user.id);
+      }
+
+      if (!matchedParticipant) {
+        const savedUserId = localStorage.getItem(`receiptcrush_user_${roomCode}`);
+        if (savedUserId && sessionParticipants) {
+          matchedParticipant = sessionParticipants.find((p) => p.id === savedUserId);
         }
+      }
+
+      if (matchedParticipant) {
+        setMyParticipant(matchedParticipant);
+        setIsJoined(true);
+      } else {
+        // Clean up dead local storage
+        localStorage.removeItem(`receiptcrush_user_${roomCode}`);
       }
 
       setLoading(false);
@@ -207,6 +218,7 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
         display_name: name.trim(),
         avatar_icon: selectedAvatar,
         avatar_color: selectedColor,
+        user_id: currentUser?.id || null,
       })
       .select()
       .single();
@@ -229,6 +241,37 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleClaimParticipant = async (participantId: string) => {
+    if (!currentUser) return;
+    
+    // Check if user already claimed someone in this room
+    if (participants.some((p) => p.user_id === currentUser.id)) {
+      alert("You have already claimed a profile in this room.");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("participants")
+        .update({ user_id: currentUser.id })
+        .eq("id", participantId)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setMyParticipant(data);
+      setIsJoined(true);
+      localStorage.setItem(`receiptcrush_user_${roomCode}`, data.id);
+      if (sessionId) {
+        await fetchParticipants(sessionId);
+      }
+    } catch (err) {
+      console.error("Failed to claim profile:", err);
+      alert("Failed to claim profile. Please try again.");
+    }
   };
 
   // --- Rendering ---
@@ -422,7 +465,10 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
             const colorClass =
               COLORS.find((c) => c.id === p.avatar_color)?.class ||
               "bg-gray-800";
+              
             const isMe = p.id === myParticipant?.id;
+            const isClaimed = !!p.user_id;
+            const isClaimable = currentUser && !isClaimed && !participants.some(x => x.user_id === currentUser.id);
 
             return (
               <div
@@ -441,10 +487,26 @@ export default function RoomPage({ params }: { params: { roomCode: string } }) {
                 <span className="text-xs font-semibold text-gray-700 truncate w-full text-center">
                   {p.display_name}
                 </span>
-                {isMe && (
-                  <span className="absolute -top-2 -right-1 text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full font-bold">
+
+                {/* Badge/Button Logic */}
+                {isMe ? (
+                  <span className="absolute -top-2 -right-1 z-10 text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full font-bold shadow-sm">
                     ME
                   </span>
+                ) : isClaimable ? (
+                  <button
+                    onClick={() => handleClaimParticipant(p.id)}
+                    className="absolute -top-2 scale-0 group-hover:scale-100 transition-transform bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg z-10 hover:bg-indigo-700 whitespace-nowrap"
+                  >
+                    Claim
+                  </button>
+                ) : null}
+
+                {/* Verified authenticated user badge */}
+                {isClaimed && !isMe && (
+                  <div className="absolute -bottom-1 -right-1 z-10 bg-white rounded-full p-0.5 shadow-sm border border-gray-100">
+                    <Check className="w-3 h-3 text-indigo-500" />
+                  </div>
                 )}
               </div>
             );
