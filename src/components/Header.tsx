@@ -21,7 +21,7 @@ export async function Header() {
         </Link>
 
         {/* Dynamic Auth Menu */}
-        <AuthMenu userEmail={user?.email} />
+        <AuthMenu userEmail={user?.email} userId={user?.id} />
       </div>
     </header>
   );

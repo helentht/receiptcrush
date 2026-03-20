@@ -4,9 +4,9 @@ import { createClient } from "@/lib/supabase/client";
 import { usePathname } from "next/navigation";
 import { LogOut, LayoutDashboard, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export function AuthMenu({ userEmail }: { userEmail: string | undefined }) {
+export function AuthMenu({ userEmail, userId }: { userEmail: string | undefined, userId?: string | undefined }) {
   const pathname = usePathname();
   const supabase = createClient();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -17,6 +17,31 @@ export function AuthMenu({ userEmail }: { userEmail: string | undefined }) {
     // Hard refresh to completely clear all states uniformly
     window.location.href = pathname || "/";
   };
+
+  useEffect(() => {
+    // If the user is logged in, automatically link their previous anonymous guests to their user_id
+    if (userId) {
+      const guestIds: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("receiptcrush_user_")) {
+          const pid = localStorage.getItem(key);
+          if (pid) guestIds.push(pid);
+        }
+      }
+
+      if (guestIds.length > 0) {
+        supabase
+          .from("participants")
+          .update({ user_id: userId })
+          .in("id", guestIds)
+          .is("user_id", null) // Only link if it hasn't been claimed yet
+          .then(({ error }) => {
+             if (error) console.error("Failed to sync guest participant records to user account", error);
+          });
+      }
+    }
+  }, [userId, supabase]);
   
   if (!userEmail) {
     return (
